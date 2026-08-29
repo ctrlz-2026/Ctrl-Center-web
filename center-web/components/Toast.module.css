@@ -1,0 +1,39 @@
+/* 다크 배경 토스트, 3초 후 자동 소멸. 화면 전환과 같은 320ms/ease-standard 로
+   올라옵니다. 바운스 없음. */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 20px;
+  border-radius: var(--radius-12);
+  background: var(--ct-toast-bg);
+  color: var(--static-white);
+  font-size: 13px;
+  line-height: 1.385;
+  letter-spacing: 0.019em;
+  font-weight: 500;
+  box-shadow: var(--elevation-overlay);
+  animation: rise var(--motion-slow) var(--ease-standard);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

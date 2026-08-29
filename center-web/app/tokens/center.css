@@ -1,0 +1,68 @@
+/* Center 프로젝트 토큰 레이어.
+ *
+ * Wanted Design System(fig-tokens.css)을 베이스로 깔고, 그 위에 핸드오프
+ * 스펙(design_handoff_safegate_web/README.md 의 Design Tokens 절)이 확정한
+ * 값만 덮어씁니다. README가 "이 값을 그대로 쓰고 픽셀 수준으로 재현하라"고
+ * 명시했으므로 충돌 시 README가 우선입니다.
+ *
+ * 덮어쓰는 이유가 있는 항목:
+ *   --green-50               DS rgb(0,191,64)      -> 스펙 rgb(0,133,71)
+ *   --orange-50              DS rgb(255,146,0)     -> 스펙 rgb(255,153,0)
+ *   --red-50                 DS rgb(255,66,66)     -> 스펙 rgb(255,58,51)
+ *   --line-normal-alternative DS 0.08              -> 스펙 0.16
+ * 프로토타입 HTML은 글자색에 var(--red-50)(=DS값)을, 배경에는 rgba(255,58,51,.08)
+ * (=스펙값)을 섞어 쓰고 있어 원본 자체가 어긋나 있습니다. 여기서 한쪽으로
+ * 통일해 글자와 배경이 같은 색에서 파생되게 했습니다.
+ */
+
+:root {
+  /* ── 스펙 확정 상태색 ─────────────────────────────────────── */
+  --green-50: rgb(0, 133, 71);
+  --orange-50: rgb(255, 153, 0);
+  --red-50: rgb(255, 58, 51);
+  --line-normal-alternative: rgba(112, 115, 124, 0.16);
+
+  /* ── 표면 ─────────────────────────────────────────────────── */
+  --ct-page-bg: rgb(247, 247, 248); /* 페이지 배경 · 표 헤더 · 행 hover */
+  --ct-surface: var(--background-normal-normal); /* 카드 · 표 · 패널 */
+  --ct-kiosk-surface: rgb(27, 28, 30); /* 키오스크(Jetson) 참조용 */
+  --ct-dim: rgba(23, 23, 25, 0.52); /* 모달 배경 */
+  --ct-toast-bg: rgb(23, 23, 25);
+
+  /* ── 상태 틴트 (배경 8%) ──────────────────────────────────── */
+  --ct-tint-primary: rgba(51, 102, 255, 0.08);
+  --ct-tint-green: rgba(0, 133, 71, 0.08);
+  --ct-tint-orange: rgba(255, 153, 0, 0.08);
+  --ct-tint-red: rgba(255, 58, 51, 0.08);
+
+  /* ── 컨트롤 치수 ──────────────────────────────────────────── */
+  --ct-nav-h: 64px;
+  --ct-thead-h: 40px;
+  --ct-row-h: 52px;
+  --ct-control-lg: 48px;
+  --ct-control-md: 40px;
+  --ct-control-sm: 32px;
+  --ct-chip-h: 36px;
+  --ct-badge-h: 24px;
+  --ct-badge-sm-h: 22px;
+  --ct-avatar-sm: 32px;
+  --ct-avatar-md: 56px;
+  --ct-avatar-lg: 64px;
+
+  /* ── 레이아웃 ─────────────────────────────────────────────── */
+  --ct-content-max: 1392px;
+  --ct-gutter: 24px; /* 데스크톱 좌우 여백 */
+  --ct-gutter-mobile: 16px;
+  --ct-section-gap: 32px;
+  --ct-panel-gap: 24px;
+
+  /* ── 모션 ─────────────────────────────────────────────────── */
+  /* --motion-fast / --motion-normal / --motion-slow / --ease-standard 는
+     semantic.css 에서 이미 스펙과 같은 값(120/200/320ms)으로 정의됨 */
+  --ct-motion-gate: 900ms; /* 게이트 해정만 예외 */
+}
+
+/* 이 제품의 웹 화면은 라이트 전용입니다. 키오스크만 어둡고, 그건 별도
+   구현(Jetson) 범위라 DS의 dark 모드를 켤 일이 없습니다. fig-tokens.css의
+   dark 블록은 :root[data-theme="dark"] / .dark 로만 걸려 있고
+   prefers-color-scheme 에는 반응하지 않으므로 별도 차단이 필요 없습니다. */

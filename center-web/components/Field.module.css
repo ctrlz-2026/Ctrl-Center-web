@@ -1,0 +1,92 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.label {
+  font-size: 13px;
+  line-height: 1.385;
+  letter-spacing: 0.019em;
+  font-weight: 600;
+  color: var(--label-alternative);
+}
+
+/* 규칙 1번대로 경계선은 border 가 아니라 inset box-shadow 입니다.
+   focus 로 2px 링이 생겨도 레이아웃이 밀리지 않습니다. */
+.control {
+  box-sizing: border-box;
+  width: 100%;
+  border-radius: var(--radius-12);
+  box-shadow: var(--line-inset-normal);
+  background: var(--ct-surface);
+  color: var(--label-normal);
+  font-size: 15px;
+  line-height: 1.467;
+  letter-spacing: 0.01em;
+  font-weight: 500;
+  transition: box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.input {
+  height: var(--ct-control-lg);
+  padding: 0 16px;
+}
+
+.textarea {
+  padding: 14px 16px;
+  line-height: 1.5;
+}
+
+.control::placeholder {
+  color: var(--label-assistive);
+}
+
+.control:focus-visible {
+  box-shadow: var(--state-focus-ring);
+}
+
+/* 값을 읽기 전용으로 보여주는 자리(작업 장소·예정 시각처럼 선택으로 채워지는 값). */
+/* 네이티브 화살표를 지우고 직접 그립니다 — 브라우저마다 모양이 달라
+   컨트롤 높이가 흔들리는 걸 막기 위해서입니다. */
+.select {
+  appearance: none;
+  padding-right: 40px;
+  cursor: pointer;
+  background-image: linear-gradient(
+      45deg,
+      transparent 50%,
+      var(--label-alternative) 50%
+    ),
+    linear-gradient(135deg, var(--label-alternative) 50%, transparent 50%);
+  background-position:
+    calc(100% - 19px) calc(50% + 2px),
+    calc(100% - 14px) calc(50% + 2px);
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.readout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: var(--ct-control-lg);
+  padding: 0 16px;
+}
+
+.readoutHint {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--label-assistive);
+}
+
+/* 인증 실패 메시지. 어떤 필드가 틀렸는지는 특정하지 않습니다. */
+.error {
+  font-size: 13px;
+  line-height: 1.385;
+  letter-spacing: 0.019em;
+  font-weight: 500;
+  color: var(--red-50);
+}

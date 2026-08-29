@@ -1,0 +1,55 @@
+/* 필터 칩. 스펙상 W3 승인함 헤더의 대기/전체 칩은 높이 32 / radius 8 / 13px 로,
+   DS 의 pill 칩(36 / 999)과 다릅니다. 화면 스펙이 우선이라 32/8 을 씁니다. */
+
+.chip {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: var(--ct-control-sm);
+  padding: 0 12px;
+  border-radius: var(--radius-8);
+  font-family: var(--font-core);
+  font-size: 13px;
+  line-height: 1.385;
+  letter-spacing: 0.019em;
+  white-space: nowrap;
+  transition: background var(--motion-fast) var(--ease-standard);
+}
+
+.chip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  pointer-events: none;
+  transition: background var(--motion-fast) var(--ease-standard);
+}
+
+.chip:hover::after {
+  background: var(--state-hover);
+}
+
+.chip:active::after {
+  background: var(--state-pressed);
+}
+
+.on {
+  background: var(--primary-normal);
+  color: var(--static-white);
+  font-weight: 600;
+}
+
+.off {
+  background: transparent;
+  box-shadow: var(--line-inset-normal);
+  color: var(--label-alternative);
+  font-weight: 500;
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

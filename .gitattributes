@@ -1,0 +1,8 @@
+# 줄바꿈을 저장소에서는 LF 로 통일합니다.
+# 안 하면 윈도우/맥 사이를 오갈 때 파일 전체가 바뀐 것처럼 보여 diff 를 못 읽습니다.
+* text=auto eol=lf
+
+# 바이너리는 건드리지 않습니다.
+*.png binary
+*.woff2 binary
+*.zip binary

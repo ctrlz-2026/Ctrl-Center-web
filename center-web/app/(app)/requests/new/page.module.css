@@ -1,0 +1,101 @@
+/* W2 · 작업 승인 요청 — 좌측 폼 flex:2 / 우측 사이드 flex:1.
+   사이드 카드 사이 간격만 24 가 아니라 16 입니다 (프로토타입 실측). */
+
+.fieldRow {
+  display: flex;
+  gap: 16px;
+}
+
+.fieldRow > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.groupLabel {
+  font-size: 13px;
+  line-height: 1.385;
+  letter-spacing: 0.019em;
+  font-weight: 600;
+  color: var(--label-alternative);
+}
+
+/* 표 안의 코드 셀만 primary 600 입니다 — 이 열이 선택의 키라서입니다. */
+.code {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-normal);
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.sideTitle {
+  font-size: 17px;
+  line-height: 1.412;
+  font-weight: 600;
+  color: var(--label-normal);
+}
+
+.pickedTitle {
+  font-size: 17px;
+  line-height: 1.412;
+  font-weight: 700;
+  color: var(--primary-normal);
+}
+
+.pickedEmpty {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: var(--label-assistive);
+}
+
+.recentRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.recentName {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: var(--label-alternative);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 방금 보낸 요청만 본문색으로 올려 눈에 띄게 합니다. */
+.recentNameActive {
+  color: var(--label-normal);
+}
+
+/* 자격 미달 경고. 요청은 보낼 수 있지만 게이트에서 차단된다는 사실을
+   보내기 전에 알려줍니다 (가설 3). */
+.warn {
+  padding: 12px 16px;
+  border-radius: var(--radius-12);
+  background: var(--ct-tint-red);
+  color: var(--red-50);
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+@media (max-width: 767px) {
+  .fieldRow {
+    flex-direction: column;
+  }
+}

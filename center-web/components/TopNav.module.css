@@ -1,0 +1,149 @@
+/* 전 화면 공통 상단 네비. 높이 64, 흰 배경, 하단 헤어라인은 border 가 아니라
+   inset box-shadow 입니다 (규칙 1번). */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: var(--ct-nav-h);
+  background: var(--ct-surface);
+  box-shadow: inset 0 -1px 0 0 var(--line-normal-alternative);
+}
+
+.inner {
+  max-width: var(--ct-content-max);
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 var(--ct-gutter);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  min-width: 0;
+}
+
+.logo {
+  flex: none;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  color: var(--primary-normal);
+}
+
+.menu {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  min-width: 0;
+}
+
+.item {
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 500;
+  color: var(--label-alternative);
+  white-space: nowrap;
+  transition: color var(--motion-fast) var(--ease-standard);
+}
+
+.item:hover {
+  color: var(--label-normal);
+}
+
+.active,
+.active:hover {
+  font-weight: 600;
+  color: var(--primary-normal);
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+}
+
+/* 새 요청 N건 배지 — W3 에서만 노출됩니다. */
+.alertBadge {
+  display: inline-flex;
+  align-items: center;
+  height: var(--ct-badge-h);
+  padding: 0 8px;
+  border-radius: var(--radius-6);
+  background: var(--ct-tint-red);
+  color: var(--red-50);
+  font-size: 12px;
+  line-height: 1.334;
+  letter-spacing: 0.025em;
+  font-weight: 600;
+}
+
+.account {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--label-neutral);
+  white-space: nowrap;
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--ct-avatar-sm);
+  height: var(--ct-avatar-sm);
+  border-radius: 50%;
+  background: var(--primary-normal);
+  color: var(--static-white);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .menu {
+    gap: 20px;
+    overflow-x: auto;
+  }
+
+  .account {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .inner {
+    padding: 0 var(--ct-gutter-mobile);
+    gap: 12px;
+  }
+
+  .left {
+    gap: 16px;
+  }
+}
+
+.signOut {
+  flex: none;
+  padding: 0 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--label-alternative);
+  white-space: nowrap;
+  transition: color var(--motion-fast) var(--ease-standard);
+}
+
+.signOut:hover {
+  color: var(--label-normal);
+}
+
+.signOut:focus-visible {
+  outline: 0;
+  border-radius: var(--radius-6);
+  box-shadow: var(--state-focus-ring);
+}

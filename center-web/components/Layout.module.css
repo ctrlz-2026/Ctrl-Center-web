@@ -1,0 +1,68 @@
+/* 좌측 본문 + 우측 사이드 패널의 2열 배치.
+   1024–1440 구간에서는 사이드가 본문 아래로 내려갑니다 (스펙 반응형). */
+
+.split {
+  display: flex;
+  gap: var(--ct-panel-gap);
+  align-items: flex-start;
+}
+
+.primary {
+  flex: 2;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ct-panel-gap);
+}
+
+.side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ct-panel-gap);
+}
+
+/* W2 사이드는 카드 사이가 24 가 아니라 16 입니다 (프로토타입 실측). */
+.sideTight {
+  gap: 16px;
+}
+
+/* W5 는 좌 300 고정 / 중앙 유동 / 우 340 고정의 3열입니다.
+   폭은 인라인 style 이 아니라 커스텀 프로퍼티로 받습니다 — 인라인 width 를 쓰면
+   아래 미디어쿼리의 width:100% 를 이겨버려 모바일에서 열이 안 펴집니다. */
+.fixed {
+  flex: none;
+  width: var(--col-width);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ct-panel-gap);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ct-panel-gap);
+}
+
+.pageTitle {
+  font-size: 24px;
+  line-height: 1.334;
+  letter-spacing: -0.023em;
+  font-weight: 700;
+  color: var(--label-normal);
+}
+
+@media (max-width: 1023px) {
+  .split {
+    flex-direction: column;
+  }
+
+  .primary,
+  .side,
+  .fixed {
+    flex: none;
+    width: 100%;
+  }
+}

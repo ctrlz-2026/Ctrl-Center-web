@@ -1,0 +1,14 @@
+/* 로그인 이후 화면들의 공통 셸. 네비 64 + 본문 32/24.
+   콘텐츠는 최대 1392 로 묶어 가운데 정렬합니다. */
+
+.main {
+  max-width: var(--ct-content-max);
+  margin: 0 auto;
+  padding: var(--ct-section-gap) var(--ct-gutter);
+}
+
+@media (max-width: 767px) {
+  .main {
+    padding: 24px var(--ct-gutter-mobile);
+  }
+}

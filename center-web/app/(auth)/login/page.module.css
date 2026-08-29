@@ -1,0 +1,113 @@
+/* W1 · 로그인 — 1440 × 810 기준. 페이지 배경 위 정중앙에 카드 1장. */
+
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--ct-page-bg);
+}
+
+.card {
+  width: 420px;
+  max-width: 100%;
+  padding: 40px;
+  border-radius: var(--radius-12);
+  background: var(--ct-surface);
+  box-shadow: var(--elevation-card);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.brand {
+  font-size: 12px;
+  line-height: 1.334;
+  letter-spacing: 0.025em;
+  font-weight: 700;
+  color: var(--primary-normal);
+}
+
+.title {
+  font-size: 24px;
+  line-height: 1.334;
+  letter-spacing: -0.023em;
+  font-weight: 700;
+  color: var(--label-normal);
+}
+
+.desc {
+  font-size: 15px;
+  line-height: 1.467;
+  font-weight: 500;
+  color: var(--label-alternative);
+}
+
+/* 브랜드·제목·설명은 한 덩어리라 카드 gap(24)보다 좁게 붙입니다. */
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 각주와 관리자 진입을 한 줄에 놓습니다. 관리자 문은 눈에 띄되
+   기본 동선(작업자 로그인)을 밀어내지 않을 만큼만 존재감을 줍니다. */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.footnote {
+  font-size: 13px;
+  line-height: 1.385;
+  letter-spacing: 0.019em;
+  font-weight: 500;
+  color: var(--label-assistive);
+}
+
+.switch {
+  flex: none;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.385;
+  letter-spacing: 0.019em;
+  font-weight: 600;
+  color: var(--label-alternative);
+  transition: color var(--motion-fast) var(--ease-standard);
+}
+
+.switch:hover {
+  color: var(--primary-normal);
+}
+
+.switch:focus-visible {
+  outline: 0;
+  border-radius: var(--radius-6);
+  box-shadow: var(--state-focus-ring);
+}
+
+@media (max-width: 767px) {
+  .page {
+    padding: var(--ct-gutter-mobile);
+    align-items: start;
+    padding-top: 64px;
+  }
+
+  .card {
+    padding: 24px;
+  }
+}

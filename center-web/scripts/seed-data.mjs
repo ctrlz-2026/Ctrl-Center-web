@@ -1,0 +1,186 @@
+/* 시드 데이터 정의. seed.mjs 가 이 파일을 읽어 Firestore 에 넣습니다.
+ *
+ * 데이터를 스크립트에서 분리한 이유: 사람·작업장·작업코드는 자주 손보는데
+ * 넣는 로직은 안 바뀝니다. 섞여 있으면 데이터 고치다 로직을 건드리게 됩니다. */
+
+// ─── 보호구 ─────────────────────────────────────────────────────────────────
+// yoloClass 는 AI 담당이 학습 클래스를 확정하면 채웁니다.
+// null 이면 "모델이 아직 못 잡는 항목"이라는 뜻입니다.
+export const ppeItems = [
+  { code: "helmet", name: "안전모", yoloClass: "helmet", active: true },
+  { code: "vest", name: "안전조끼", yoloClass: null, active: true },
+  { code: "gloves", name: "장갑", yoloClass: null, active: true },
+  { code: "shoes", name: "안전화", yoloClass: null, active: true },
+  { code: "harness", name: "안전벨트", yoloClass: null, active: true },
+  { code: "gasmask", name: "방독마스크", yoloClass: null, active: true },
+  { code: "lanyard", name: "안전대", yoloClass: null, active: true },
+  { code: "goggles", name: "보안경", yoloClass: null, active: true },
+];
+
+export const qualifications = [
+  { code: "high_place", name: "고소작업 안전교육" },
+  { code: "electric", name: "전기안전 특별교육" },
+  { code: "confined", name: "밀폐공간 작업 자격" },
+  { code: "chemical", name: "유해화학물질 취급 자격" },
+  { code: "crane", name: "천장크레인 운전 자격" },
+];
+
+// ─── 작업장 ─────────────────────────────────────────────────────────────────
+export const sites = [
+  { id: "site-a1", name: "A동 1층 라인2" },
+  { id: "site-a3", name: "A동 3층 공조실" },
+  { id: "site-b2", name: "B동 2층 기계실" },
+  { id: "site-c0", name: "C동 지하 배수조" },
+  { id: "site-d5", name: "D동 옥상" },
+  { id: "site-e1", name: "E동 도장부스" },
+  { id: "site-f0", name: "F동 폐수처리장" },
+];
+
+export const gates = sites.map((s) => ({
+  id: `gate-${s.id.replace("site-", "")}`,
+  siteId: s.id,
+  name: `${s.name} 게이트`,
+}));
+
+// ─── 작업코드 ───────────────────────────────────────────────────────────────
+export const workCodes = [
+  { code: "A-3", name: "사다리 고소 점검", requiredHeadcount: 2,
+    requiredPpe: ["helmet", "shoes", "harness"], requiredQualifications: ["high_place"],
+    estimatedMinutes: 45, active: true },
+  { code: "B-7", name: "조명 교체", requiredHeadcount: 1,
+    requiredPpe: ["helmet"], requiredQualifications: [],
+    estimatedMinutes: 25, active: true },
+  { code: "C-1", name: "배관 밸브 교체", requiredHeadcount: 2,
+    requiredPpe: ["helmet", "shoes", "gloves"], requiredQualifications: [],
+    estimatedMinutes: 75, active: true },
+  { code: "D-2", name: "컨베이어 벨트 점검", requiredHeadcount: 2,
+    requiredPpe: ["helmet", "shoes"], requiredQualifications: [],
+    estimatedMinutes: 60, active: true },
+  { code: "E-4", name: "밀폐공간 정비", requiredHeadcount: 3,
+    requiredPpe: ["helmet", "gasmask", "lanyard"], requiredQualifications: ["confined"],
+    estimatedMinutes: 90, active: true },
+  { code: "F-1", name: "폐수 펌프 점검", requiredHeadcount: 2,
+    requiredPpe: ["helmet", "gloves", "goggles"], requiredQualifications: ["chemical"],
+    estimatedMinutes: 50, active: true },
+  { code: "G-2", name: "도장부스 필터 교체", requiredHeadcount: 2,
+    requiredPpe: ["helmet", "gasmask", "gloves"], requiredQualifications: ["chemical"],
+    estimatedMinutes: 40, active: true },
+  { code: "H-5", name: "공조기 벨트 교체", requiredHeadcount: 2,
+    requiredPpe: ["helmet", "gloves"], requiredQualifications: [],
+    estimatedMinutes: 35, active: true },
+  { code: "J-8", name: "천장크레인 와이어 점검", requiredHeadcount: 2,
+    requiredPpe: ["helmet", "harness", "gloves"], requiredQualifications: ["crane", "high_place"],
+    estimatedMinutes: 70, active: true },
+];
+
+/* ─── 직원 ───────────────────────────────────────────────────────────────────
+ * 앞의 4명이 실제 팀원(로그인 계정 발급), 나머지는 관제 화면을 채우는 가상 인물입니다.
+ * 가상 인물도 employees 에 있어야 게이트 세션의 참여인원이 이름으로 표시됩니다.
+ *
+ * 자격은 상태를 저장하지 않고 expiresOn 만 둡니다. 유효/임박/만료는 읽을 때 계산합니다.
+ * 일부러 만료·임박을 섞어놨습니다 — 자격 미달 차단 시나리오를 보여줘야 하기 때문입니다. */
+export const employees = [
+  // ── 실제 팀원 (로그인 가능) ──
+  {
+    empNo: "2016-0101", name: "윤지윤", team: "안전관리팀", rank: "부장",
+    role: "safety_admin", hiredOn: "2016-03-02", completedCount: 0, active: true,
+    login: true,
+    qualifications: [
+      { code: "high_place", expiresOn: "2028-03-01" },
+      { code: "chemical", expiresOn: "2027-11-30" },
+    ],
+  },
+  {
+    empNo: "2015-0207", name: "김병오", team: "생산1팀", rank: "팀장",
+    role: "leader", hiredOn: "2015-02-07", completedCount: 1043, active: true,
+    login: true,
+    qualifications: [
+      { code: "high_place", expiresOn: "2027-08-15" },
+      { code: "electric", expiresOn: "2027-04-20" },
+      { code: "crane", expiresOn: "2028-01-10" },
+    ],
+  },
+  {
+    empNo: "2020-0318", name: "정천호", team: "생산1팀", rank: "주임",
+    role: "worker", hiredOn: "2020-03-18", completedCount: 287, active: true,
+    login: true,
+    qualifications: [
+      { code: "high_place", expiresOn: "2027-05-22" },
+      { code: "electric", expiresOn: "2026-09-08" }, // 만료 임박
+    ],
+  },
+  {
+    empNo: "2021-0442", name: "박상하", team: "생산2팀", rank: "사원",
+    role: "worker", hiredOn: "2021-04-12", completedCount: 156, active: true,
+    login: true,
+    qualifications: [
+      { code: "confined", expiresOn: "2026-07-20" }, // 만료 — 자격 미달 시연용
+      { code: "high_place", expiresOn: "2027-09-30" },
+    ],
+  },
+
+  // ── 관제 화면을 채우는 가상 인물 ──
+  {
+    empNo: "2013-0055", name: "윤태호", team: "설비보전팀", rank: "부장",
+    role: "worker", hiredOn: "2013-05-06", completedCount: 1580, active: true,
+    qualifications: [
+      { code: "crane", expiresOn: "2028-02-14" },
+      { code: "electric", expiresOn: "2027-10-01" },
+    ],
+  },
+  {
+    empNo: "2014-0132", name: "홍성길", team: "설비보전팀", rank: "차장",
+    role: "worker", hiredOn: "2014-07-21", completedCount: 1120, active: true,
+    qualifications: [
+      { code: "chemical", expiresOn: "2027-06-30" },
+      { code: "confined", expiresOn: "2027-03-15" },
+    ],
+  },
+  {
+    empNo: "2017-0264", name: "곽동훈", team: "생산2팀", rank: "반장",
+    role: "worker", hiredOn: "2017-09-04", completedCount: 612, active: true,
+    qualifications: [
+      { code: "high_place", expiresOn: "2027-12-05" },
+      { code: "confined", expiresOn: "2026-09-10" }, // 만료 임박
+    ],
+  },
+  {
+    empNo: "2018-0511", name: "이수민", team: "전기팀", rank: "주임",
+    role: "worker", hiredOn: "2018-05-11", completedCount: 398, active: true,
+    qualifications: [{ code: "electric", expiresOn: "2027-07-19" }],
+  },
+  {
+    empNo: "2019-0417", name: "최유진", team: "생산1팀", rank: "주임",
+    role: "worker", hiredOn: "2019-04-17", completedCount: 341, active: true,
+    qualifications: [
+      { code: "high_place", expiresOn: "2027-01-25" },
+      { code: "chemical", expiresOn: "2026-06-30" }, // 만료
+    ],
+  },
+  {
+    empNo: "2022-0703", name: "김민재", team: "생산1팀", rank: "사원",
+    role: "worker", hiredOn: "2022-07-03", completedCount: 94, active: true,
+    qualifications: [{ code: "high_place", expiresOn: "2027-04-11" }],
+  },
+  {
+    empNo: "2023-0128", name: "박서준", team: "생산2팀", rank: "사원",
+    role: "worker", hiredOn: "2023-01-28", completedCount: 51, active: true,
+    qualifications: [],
+  },
+  {
+    empNo: "2021-0619", name: "장현우", team: "전기팀", rank: "사원",
+    role: "worker", hiredOn: "2021-06-19", completedCount: 173, active: true,
+    qualifications: [{ code: "electric", expiresOn: "2027-02-28" }],
+  },
+];
+
+/* ─── 사원증 ─────────────────────────────────────────────────────────────────
+ * 카드·리더기가 아직 배송 전이라 UID 가 임시값입니다.
+ * pending: true 인 문서는 실물이 오면 실제 UID 로 교체해야 합니다. */
+export const employeeCards = employees.map((e) => ({
+  cardUid: `TEMP-${e.empNo}`,
+  empNo: e.empNo,
+  issuedAt: "2026-08-28",
+  revokedAt: null,
+  pending: true,
+}));

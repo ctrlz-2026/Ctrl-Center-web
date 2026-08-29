@@ -1,0 +1,165 @@
+/* W4 · 전체 현황 대시보드 — 상단 KPI 4칸, 하단 좌 표 / 우 이상 상황. */
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kpiLabel {
+  font-size: 13px;
+  line-height: 1.385;
+  letter-spacing: 0.019em;
+  font-weight: 500;
+  color: var(--label-alternative);
+}
+
+.kpiValue {
+  font-size: 36px;
+  line-height: 1.334;
+  letter-spacing: -0.027em;
+  font-weight: 700;
+  color: var(--label-normal);
+  /* 숫자가 갱신될 때 폭이 흔들리지 않게 고정폭 숫자를 씁니다. */
+  font-variant-numeric: tabular-nums;
+}
+
+/* 이상 상황 카드만 빨간 테두리 + 빨간 수치입니다.
+   Card 의 .card 가 box-shadow 를 이미 걸고 있고 그건 다른 CSS 모듈이라,
+   클래스 하나짜리끼리는 파일 로드 순서로 승부가 갈립니다. 클래스를 두 번
+   써서 특이성(0,2,0)으로 확실히 이기게 했습니다. */
+.kpiAlert.kpiAlert {
+  box-shadow:
+    var(--elevation-card),
+    inset 0 0 0 1px var(--red-50);
+}
+
+.kpiValueAlert {
+  color: var(--red-50);
+}
+
+/* 경과 시간이 예상을 넘기면 주의색 600 으로 바뀝니다. */
+.elapsed {
+  font-variant-numeric: tabular-nums;
+}
+
+.elapsedOver {
+  color: var(--orange-50);
+  font-weight: 600;
+}
+
+/* 이상 상황 항목. 경고와 차단이 배경·제목색으로만 구분됩니다. */
+.anomaly {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: var(--radius-12);
+}
+
+.anomalyWarning {
+  background: var(--ct-tint-orange);
+}
+
+.anomalyBlocked {
+  background: var(--ct-tint-red);
+}
+
+.anomalyTitle {
+  font-size: 14px;
+  line-height: 1.429;
+  letter-spacing: 0.015em;
+  font-weight: 600;
+}
+
+.anomalyTitleWarning {
+  color: var(--orange-50);
+}
+
+.anomalyTitleBlocked {
+  color: var(--red-50);
+}
+
+.anomalyDetail {
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: var(--label-neutral);
+}
+
+.sectionTitle {
+  font-size: 17px;
+  line-height: 1.412;
+  font-weight: 600;
+  color: var(--label-normal);
+}
+
+/* 관제 화면의 연결 표시. 끊기면 --red-50 으로 전환하고 마지막 갱신 시각을
+   띄우게 되어 있습니다 (프로토타입은 정상 상태만 있습니다). */
+.link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.334;
+  letter-spacing: 0.025em;
+  font-weight: 500;
+  color: var(--label-alternative);
+}
+
+.linkDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green-50);
+}
+
+@media (max-width: 1023px) {
+  .kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 599px) {
+  .kpis {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 연결이 끊기면 표시가 빨강으로 바뀝니다. 스펙의 "통신 끊김" 처리입니다. */
+.linkDown {
+  color: var(--red-50);
+}
+
+.linkDown .linkDot {
+  background: var(--red-50);
+}
+
+/* 이상 상황이 없을 때. 빈 패널을 그냥 두면 로딩 실패처럼 보입니다. */
+.calm {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: var(--label-assistive);
+}
+
+.workCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* 예정 시각 대비 기록. 경고가 아니라 사실 기록이라 보조색으로 둡니다. */
+.scheduleNote {
+  font-size: 12px;
+  line-height: 1.3;
+  letter-spacing: 0.025em;
+  color: var(--label-alternative);
+}

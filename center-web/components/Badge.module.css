@@ -1,0 +1,62 @@
+/* 상태 배지. 스펙의 "상태 → 색" 표가 유일한 출처이며, 화면 쪽에서 색을
+   직접 고르지 못하게 tone 값만 받습니다. 같은 상태에 다른 색을 쓰지 않기
+   위한 장치입니다. */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  box-sizing: border-box;
+  border-radius: var(--radius-6);
+  white-space: nowrap;
+  font-family: var(--font-core);
+  font-weight: 600;
+}
+
+.medium {
+  height: var(--ct-badge-h); /* 24 */
+  padding: 0 8px;
+  font-size: 12px;
+  line-height: 1.334;
+  letter-spacing: 0.025em;
+}
+
+.small {
+  height: var(--ct-badge-sm-h); /* 22 */
+  padding: 0 7px;
+  font-size: 12px;
+  line-height: 1.334;
+  letter-spacing: 0.025em;
+}
+
+.pending {
+  color: var(--primary-normal);
+  background: var(--ct-tint-primary);
+}
+
+.success {
+  color: var(--green-50);
+  background: var(--ct-tint-green);
+}
+
+.danger {
+  color: var(--red-50);
+  background: var(--ct-tint-red);
+}
+
+.warning {
+  color: var(--orange-50);
+  background: var(--ct-tint-orange);
+}
+
+/* 진행중만 틴트가 아니라 2px inset 테두리입니다 (스펙 상태표). */
+.active {
+  color: var(--primary-normal);
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--primary-normal);
+}
+
+.neutral {
+  color: var(--label-alternative);
+  background: var(--fill-normal);
+}

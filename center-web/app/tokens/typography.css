@@ -1,0 +1,30 @@
+/* Type scale transcribed from the Figma source (size / line-height / letter-spacing
+   read off real text nodes). The file registers no Figma text styles, so the ROLE
+   NAMES below are this project's; the numbers are the file's. */
+:root{
+  --font-core:"Pretendard Variable","Pretendard JP","Pretendard",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font-mono:"SF Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+
+  --type-display1-size:36px;   --type-display1-lh:1.334;  --type-display1-ls:-0.027em; --type-display1-weight:700;
+  --type-title1-size:24px;     --type-title1-lh:1.334;    --type-title1-ls:-0.023em;   --type-title1-weight:700;
+  --type-title2-size:20px;     --type-title2-lh:1.4;      --type-title2-ls:-0.012em;   --type-title2-weight:600;
+  --type-heading1-size:17px;   --type-heading1-lh:1.412;  --type-heading1-ls:0em;      --type-heading1-weight:600;
+  --type-body1-size:16px;      --type-body1-lh:1.5;       --type-body1-ls:0.006em;     --type-body1-weight:500;
+  --type-body2-size:15px;      --type-body2-lh:1.467;     --type-body2-ls:0.010em;     --type-body2-weight:500;
+  --type-label1-size:14px;     --type-label1-lh:1.429;    --type-label1-ls:0.015em;    --type-label1-weight:600;
+  --type-label2-size:13px;     --type-label2-lh:1.385;    --type-label2-ls:0.019em;    --type-label2-weight:600;
+  --type-caption1-size:12px;   --type-caption1-lh:1.334;  --type-caption1-ls:0.025em;  --type-caption1-weight:500;
+  --type-caption2-size:11px;   --type-caption2-lh:1.273;  --type-caption2-ls:0.031em;  --type-caption2-weight:500;
+
+  --weight-regular:400; --weight-medium:500; --weight-semibold:600; --weight-bold:700;
+}
+.wds-display1{font:var(--type-display1-weight) var(--type-display1-size)/var(--type-display1-lh) var(--font-core);letter-spacing:var(--type-display1-ls)}
+.wds-title1{font:var(--type-title1-weight) var(--type-title1-size)/var(--type-title1-lh) var(--font-core);letter-spacing:var(--type-title1-ls)}
+.wds-title2{font:var(--type-title2-weight) var(--type-title2-size)/var(--type-title2-lh) var(--font-core);letter-spacing:var(--type-title2-ls)}
+.wds-heading1{font:var(--type-heading1-weight) var(--type-heading1-size)/var(--type-heading1-lh) var(--font-core);letter-spacing:var(--type-heading1-ls)}
+.wds-body1{font:var(--type-body1-weight) var(--type-body1-size)/var(--type-body1-lh) var(--font-core);letter-spacing:var(--type-body1-ls)}
+.wds-body2{font:var(--type-body2-weight) var(--type-body2-size)/var(--type-body2-lh) var(--font-core);letter-spacing:var(--type-body2-ls)}
+.wds-label1{font:var(--type-label1-weight) var(--type-label1-size)/var(--type-label1-lh) var(--font-core);letter-spacing:var(--type-label1-ls)}
+.wds-label2{font:var(--type-label2-weight) var(--type-label2-size)/var(--type-label2-lh) var(--font-core);letter-spacing:var(--type-label2-ls)}
+.wds-caption1{font:var(--type-caption1-weight) var(--type-caption1-size)/var(--type-caption1-lh) var(--font-core);letter-spacing:var(--type-caption1-ls)}
+.wds-caption2{font:var(--type-caption2-weight) var(--type-caption2-size)/var(--type-caption2-lh) var(--font-core);letter-spacing:var(--type-caption2-ls)}

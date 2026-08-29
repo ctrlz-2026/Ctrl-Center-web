@@ -1,0 +1,195 @@
+import { NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebase/admin";
+import { isResponse, requireCaller } from "@/lib/firebase/auth-guard";
+
+/* 젯슨 대역 — 웹에서 게이트를 수동으로 진행시킵니다.
+ *
+ * 원래는 작업자가 키오스크에서 작업을 고르고, 사원증을 태그하고, 얼굴·보호구
+ * 검증을 통과하면 문이 열립니다. 그 기기가 아직 없으므로 관제 화면에서
+ * 같은 상태 전이를 손으로 넘길 수 있게 했습니다.
+ *
+ *   승인됨 ──[임시 문열림]──▶ 문 열림 ──[작업 시작]──▶ 진행중 ──[업무 종료]──▶ 종료
+ *
+ * 젯슨이 붙으면 이 경로는 지웁니다. 상태 전이 로직 자체는 /api/gate/events 로
+ * 옮겨가고, 전이 규칙(어떤 상태에서 어디로 갈 수 있는지)은 그대로 씁니다.
+ *
+ * **예정 시각은 진입을 막지 않습니다.** 미리 시작하든 늦게 시작하든 통과시키고,
+ * 예정 대비 얼마나 차이 났는지만 세션에 기록합니다. */
+
+type Action = "unlock" | "start" | "end";
+
+/** 수동 조작으로 만든 출입 기록임을 남깁니다 — 실제 태그·얼굴인식을 거치지
+ *  않았으므로 나중에 통계를 낼 때 구분할 수 있어야 합니다. */
+const MANUAL = { manual: true as const };
+
+export async function POST(request: Request) {
+  const caller = await requireCaller(request);
+  if (isResponse(caller)) return caller;
+
+  // 현장 제어라 결재권자와 안전관리자만 누를 수 있습니다.
+  if (caller.role !== "leader" && caller.role !== "safety_admin") {
+    return NextResponse.json(
+      { error: "게이트를 제어할 권한이 없어요." },
+      { status: 403 },
+    );
+  }
+
+  let body: { action?: Action; requestId?: string; sessionId?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "JSON 형식이 아니에요." }, { status: 400 });
+  }
+
+  const db = adminDb();
+  const now = new Date().toISOString();
+
+  // ── 임시 문열림: 승인된 요청으로 게이트 세션을 엽니다 ────────────────────
+  if (body.action === "unlock") {
+    if (!body.requestId) {
+      return NextResponse.json({ error: "requestId 가 필요해요." }, { status: 400 });
+    }
+    const reqRef = db.collection("approvalRequests").doc(body.requestId);
+    const reqSnap = await reqRef.get();
+    if (!reqSnap.exists) {
+      return NextResponse.json({ error: "없는 요청이에요." }, { status: 404 });
+    }
+    const r = reqSnap.data()!;
+    if (r.status !== "approved") {
+      return NextResponse.json(
+        { error: "승인된 작업만 문을 열 수 있어요." },
+        { status: 409 },
+      );
+    }
+
+    // 같은 요청으로 세션이 두 번 열리면 인원 집계가 섞입니다.
+    const existing = await db
+      .collection("gateSessions")
+      .where("approvalRequestId", "==", body.requestId)
+      .limit(1)
+      .get();
+    if (!existing.empty) {
+      return NextResponse.json(
+        { error: "이미 게이트가 열린 작업이에요." },
+        { status: 409 },
+      );
+    }
+
+    const gate = await db
+      .collection("gates")
+      .where("siteId", "==", r.siteId)
+      .limit(1)
+      .get();
+
+    const sessionRef = db.collection("gateSessions").doc();
+    await sessionRef.set({
+      gateId: gate.empty ? null : gate.docs[0].id,
+      siteId: r.siteId,
+      workCode: r.workCode,
+      approvalRequestId: body.requestId,
+      state: "unlocking",
+      scheduledAt: r.scheduledAt ?? null,
+      startedAt: now,
+      endedAt: null,
+      members: [r.requesterId],
+      enteredCount: 0,
+      ...MANUAL,
+    });
+
+    return NextResponse.json({ ok: true, sessionId: sessionRef.id, state: "unlocking" });
+  }
+
+  // ── 작업 시작 / 업무 종료 ────────────────────────────────────────────────
+  if (body.action !== "start" && body.action !== "end") {
+    return NextResponse.json(
+      { error: "action 은 unlock · start · end 중 하나여야 해요." },
+      { status: 400 },
+    );
+  }
+  if (!body.sessionId) {
+    return NextResponse.json({ error: "sessionId 가 필요해요." }, { status: 400 });
+  }
+
+  const ref = db.collection("gateSessions").doc(body.sessionId);
+  const snap = await ref.get();
+  if (!snap.exists) {
+    return NextResponse.json({ error: "없는 세션이에요." }, { status: 404 });
+  }
+  const s = snap.data()!;
+
+  if (body.action === "start") {
+    if (s.state !== "unlocking") {
+      return NextResponse.json(
+        { error: "문이 열린 작업만 시작할 수 있어요." },
+        { status: 409 },
+      );
+    }
+    const members: string[] = s.members ?? [];
+    await ref.update({
+      state: "working",
+      startedAt: now,
+      enteredCount: members.length,
+    });
+
+    // 개인별 출입 기록. 수동 조작이라 얼굴·보호구 판정은 남기지 않습니다 —
+    // 하지 않은 검증을 통과했다고 적으면 기록이 거짓말이 됩니다.
+    const batch = db.batch();
+    for (const empNo of members) {
+      batch.set(
+        db.collection("accessLogs").doc(`${body.sessionId}_${empNo}`),
+        {
+          sessionId: body.sessionId,
+          empNo,
+          gateId: s.gateId ?? null,
+          siteId: s.siteId,
+          workCode: s.workCode,
+          cardUid: null,
+          taggedAt: null,
+          faceMatched: null,
+          faceScore: null,
+          ppePassed: null,
+          ppeAttempts: 0,
+          enteredAt: now,
+          exitedAt: null,
+          ...MANUAL,
+        },
+        { merge: true },
+      );
+    }
+    await batch.commit();
+
+    return NextResponse.json({ ok: true, state: "working" });
+  }
+
+  // end
+  if (s.state !== "working") {
+    return NextResponse.json(
+      { error: "진행중인 작업만 종료할 수 있어요." },
+      { status: 409 },
+    );
+  }
+
+  const durationMinutes = Math.max(
+    1,
+    Math.round((Date.now() - new Date(String(s.startedAt)).getTime()) / 60_000),
+  );
+
+  await ref.update({
+    state: "closed",
+    endedAt: now,
+    durationMinutes,
+    // 수동 진행이라 검증을 거치지 않았습니다. 1차 통과로 적으면 통과율이 부풀려집니다.
+    passedFirstTry: false,
+    verification: "웹에서 수동 진행 (검증 미실시)",
+  });
+
+  const logs = await db
+    .collection("accessLogs")
+    .where("sessionId", "==", body.sessionId)
+    .get();
+  const batch = db.batch();
+  for (const l of logs.docs) batch.update(l.ref, { exitedAt: now });
+  await batch.commit();
+
+  return NextResponse.json({ ok: true, state: "closed", durationMinutes });
+}

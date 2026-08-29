@@ -1,0 +1,76 @@
+.card {
+  background: var(--ct-surface);
+  border-radius: var(--radius-12);
+  box-shadow: var(--elevation-card);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 데스크톱 카드 내부 여백은 20, 폼 카드처럼 밀도가 낮은 곳은 24 를 씁니다. */
+.pad20 {
+  padding: 20px;
+}
+
+.pad24 {
+  padding: 24px;
+}
+
+.pad0 {
+  padding: 0;
+}
+
+.gap12 > * + * {
+  margin-top: 12px;
+}
+
+.gap16 > * + * {
+  margin-top: 16px;
+}
+
+.gap24 > * + * {
+  margin-top: 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  font: var(--type-title2-weight) var(--type-title2-size) /
+    var(--type-title2-lh) var(--font-core);
+  letter-spacing: var(--type-title2-ls);
+  color: var(--label-normal);
+}
+
+/* 라벨/값을 좌우로 미는 정보 행. W2 선택한 작업, W3 요청 상세, W5 상세 패널이
+   전부 같은 모양이라 하나로 씁니다. */
+.infoRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.infoLabel {
+  flex: none;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: var(--label-alternative);
+}
+
+.infoValue {
+  text-align: right;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 600;
+  color: var(--label-normal);
+}
+
+.divider {
+  height: 1px;
+  background: var(--line-normal-alternative);
+}

@@ -1,0 +1,84 @@
+/* W5 · 마이페이지 — 좌 프로필 300 고정 / 중앙 이력 표 / 우 상세 340 고정. */
+
+.profileHead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ct-avatar-md); /* 56 */
+  height: var(--ct-avatar-md);
+  border-radius: 50%;
+  background: var(--primary-normal);
+  color: var(--static-white);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.name {
+  font-size: 20px;
+  line-height: 1.4;
+  letter-spacing: -0.012em;
+  font-weight: 700;
+  color: var(--label-normal);
+}
+
+.team {
+  font-size: 13px;
+  line-height: 1.385;
+  letter-spacing: 0.019em;
+  font-weight: 500;
+  color: var(--label-alternative);
+}
+
+.sectionTitle {
+  font-size: 17px;
+  line-height: 1.412;
+  font-weight: 600;
+  color: var(--label-normal);
+}
+
+.qualRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.qualName {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: var(--label-neutral);
+  min-width: 0;
+}
+
+/* 이력 표의 작업 셀 — 코드와 작업명을 한 줄에 붙입니다. */
+.workCode {
+  font-weight: 600;
+  color: var(--primary-normal);
+}
+
+/* 검증결과 열. 1차 통과가 아니면 주의색으로 눈에 띄게 합니다 — 가설 2의 지표. */
+.verifyOk {
+  color: var(--label-neutral);
+}
+
+.verifyRetry {
+  color: var(--orange-50);
+  font-weight: 600;
+}
+
+.noteHint {
+  font-size: 13px;
+  line-height: 1.385;
+  letter-spacing: 0.019em;
+  font-weight: 500;
+  color: var(--label-assistive);
+}

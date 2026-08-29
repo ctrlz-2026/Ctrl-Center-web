@@ -1,0 +1,15 @@
+/* Pretendard — shipped with the system (uploads/web, OFL 1.1, see assets/fonts/LICENSE.txt).
+   The Figma source specifies "Pretendard JP"; the JP build was not provided, so the
+   standard Pretendard binaries are registered under BOTH family names. Metrics are
+   identical for Latin/Hangul; JP kana coverage falls back to the system font. */
+@font-face{font-family:"Pretendard Variable";font-weight:45 920;font-style:normal;font-display:swap;src:url("/fonts/PretendardVariable.woff2") format("woff2-variations")}
+@font-face{font-family:"Pretendard";font-weight:400;font-style:normal;font-display:swap;src:url("/fonts/Pretendard-Regular.woff2") format("woff2")}
+@font-face{font-family:"Pretendard";font-weight:500;font-style:normal;font-display:swap;src:url("/fonts/Pretendard-Medium.woff2") format("woff2")}
+@font-face{font-family:"Pretendard";font-weight:600;font-style:normal;font-display:swap;src:url("/fonts/Pretendard-SemiBold.woff2") format("woff2")}
+@font-face{font-family:"Pretendard";font-weight:700;font-style:normal;font-display:swap;src:url("/fonts/Pretendard-Bold.woff2") format("woff2")}
+@font-face{font-family:"Pretendard";font-weight:800;font-style:normal;font-display:swap;src:url("/fonts/Pretendard-ExtraBold.woff2") format("woff2")}
+@font-face{font-family:"Pretendard JP";font-weight:400;font-style:normal;font-display:swap;src:url("/fonts/Pretendard-Regular.woff2") format("woff2")}
+@font-face{font-family:"Pretendard JP";font-weight:500;font-style:normal;font-display:swap;src:url("/fonts/Pretendard-Medium.woff2") format("woff2")}
+@font-face{font-family:"Pretendard JP";font-weight:600;font-style:normal;font-display:swap;src:url("/fonts/Pretendard-SemiBold.woff2") format("woff2")}
+@font-face{font-family:"Pretendard JP";font-weight:700;font-style:normal;font-display:swap;src:url("/fonts/Pretendard-Bold.woff2") format("woff2")}
+@font-face{font-family:"Pretendard JP";font-weight:800;font-style:normal;font-display:swap;src:url("/fonts/Pretendard-ExtraBold.woff2") format("woff2")}

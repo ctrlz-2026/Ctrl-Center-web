@@ -1,0 +1,103 @@
+/* 임포트 순서가 중요합니다: 폰트 → Figma 원본 변수 → 파생 레이어(타이포/시맨틱)
+   → Center 프로젝트 오버라이드. 뒤에 오는 파일이 앞을 덮습니다. */
+@import "./tokens/fonts.css";
+@import "./tokens/fig-tokens.css";
+@import "./tokens/typography.css";
+@import "./tokens/semantic.css";
+@import "./tokens/center.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--ct-page-bg);
+  color: var(--label-normal);
+  font: var(--type-body2-weight) var(--type-body2-size) / var(--type-body2-lh)
+    var(--font-core);
+  letter-spacing: var(--type-body2-ls);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 스펙 규칙 3번: 그라디언트·이모지·순수 검정 텍스트 금지.
+   순수 검정이 새어 들어오지 않게 기본 색을 --label-normal 로 고정합니다. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure,
+blockquote,
+dl,
+dd {
+  margin: 0;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
+button {
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+/* 스펙 규칙 1번: 경계선은 CSS border 가 아니라 inset box-shadow.
+   상태 변화가 레이아웃을 밀지 않게 하기 위함이며 전 화면에 적용됩니다. */
+input,
+textarea,
+select {
+  border: 0;
+  outline: 0;
+  background: var(--ct-surface);
+}
+
+textarea {
+  resize: none;
+}
+
+:focus-visible {
+  outline: 0;
+  box-shadow: var(--state-focus-ring);
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* semantic.css 가 a 태그에 hover 밑줄을 걸어두는데, 이 제품에는 본문 링크가
+   없고 네비 메뉴만 있습니다. 밑줄이 네비에서 튀므로 여기서 끕니다. */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:hover {
+  color: inherit;
+  text-decoration: none;
+}

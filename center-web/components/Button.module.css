@@ -1,0 +1,106 @@
+/* 치수·색 모두 Wanted DS 의 components/action/Button.jsx 구현값을 그대로 옮긴 것입니다.
+   높이는 원본에서 padding + font-size × line-height 로 파생되지만(large 12+12+24=48),
+   픽셀 고정을 위해 여기서는 height 를 명시하고 box-sizing: border-box 로 맞췄습니다. */
+
+.btn {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: fit-content;
+  white-space: nowrap;
+  font-family: var(--font-core);
+  transition: background var(--motion-fast) var(--ease-standard);
+}
+
+/* 규칙 2번: hover/press 는 색조를 바꾸지 않고 표면 위에 검정 5% / 8% 스크림을
+   얹습니다. 크기 변화·바운스 없음. 그래서 filter/opacity 가 아니라 오버레이입니다. */
+.btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  pointer-events: none;
+  transition: background var(--motion-fast) var(--ease-standard);
+}
+
+.btn:hover:not(:disabled)::after {
+  background: var(--state-hover);
+}
+
+.btn:active:not(:disabled)::after {
+  background: var(--state-pressed);
+}
+
+.btn:disabled {
+  cursor: default;
+  background: var(--interaction-disable);
+  color: var(--label-assistive);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+/* ── 사이즈 ─────────────────────────────────────────────────── */
+.large {
+  height: 48px;
+  border-radius: 12px;
+  padding: 12px 28px;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: 0.006em;
+  gap: 6px;
+}
+
+.medium {
+  height: 40px;
+  border-radius: 10px;
+  padding: 9px 20px;
+  font-size: 15px;
+  line-height: 1.467;
+  letter-spacing: 0.01em;
+  gap: 5px;
+}
+
+.small {
+  height: 32px;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  line-height: 1.385;
+  letter-spacing: 0.019em;
+  gap: 4px;
+}
+
+/* ── 표면 ───────────────────────────────────────────────────── */
+.solidPrimary {
+  background: var(--primary-normal);
+  color: var(--static-white);
+  font-weight: 600;
+}
+
+.solidAssistive {
+  background: var(--fill-normal);
+  backdrop-filter: var(--blur-frosted);
+  color: var(--label-neutral);
+  font-weight: 500;
+}
+
+.outlinedPrimary {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--primary-normal);
+  color: var(--primary-normal);
+  font-weight: 600;
+}
+
+.outlinedAssistive {
+  background: transparent;
+  box-shadow: var(--line-inset-normal);
+  color: var(--label-normal);
+  font-weight: 500;
+}

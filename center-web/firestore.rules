@@ -1,0 +1,24 @@
+rules_version = '2';
+
+// Center 출입통제 — Firestore 보안 규칙
+//
+// 전부 잠급니다. 의도한 것입니다.
+//
+// 브라우저도 젯슨도 Firestore 를 직접 만지지 않습니다. 모든 접근은 서버
+// (Next.js Route Handler)를 거치고, 서버는 Admin SDK 를 쓰므로 이 규칙의
+// 적용을 받지 않습니다. 권한 판정은 서버 코드 한 곳에 모여 있습니다.
+//
+// 클라이언트에 읽기를 열면 규칙에 로직이 흩어지고, 나중에 무엇이 무엇을
+// 막는지 추적이 안 됩니다. 실시간 갱신도 규칙을 여는 대신
+// /api/stream/requests 가 서버에서 구독해 SSE 로 밀어주는 방식으로 풀었습니다.
+//
+// 배포: firebase deploy --only firestore:rules
+//       (콘솔에서 직접 붙여넣어도 됩니다)
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
