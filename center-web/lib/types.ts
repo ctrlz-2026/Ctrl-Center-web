@@ -252,6 +252,25 @@ export interface SiteStatus {
   expectedEndLabel?: string;
 }
 
+/** 작업장별 특이사항. 마이페이지가 "내가 쓴 것"이라면 이쪽은 "여기서 나온 것"입니다
+ *  — 다음에 그 장소에 들어갈 사람이 읽으라고 모아둔 화면의 데이터입니다. */
+export interface SiteNotes {
+  siteId: string;
+  siteName: string;
+  notes: {
+    id: string;
+    note: string;
+    authorName: string;
+    authorRank: string;
+    workCode: string;
+    workTitle: string;
+    /** 사람이 읽는 날짜 ("어제 15:07"). */
+    when: string;
+    /** 정렬용 ISO. 화면에 직접 쓰지 않습니다. */
+    at: string;
+  }[];
+}
+
 export interface Anomaly {
   /** 같은 종류의 이상 상황이 동시에 여러 건 뜰 수 있어 제목은 키가 못 됩니다.
    *  세션 id 를 그대로 씁니다. */

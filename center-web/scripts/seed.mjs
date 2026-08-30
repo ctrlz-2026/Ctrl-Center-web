@@ -22,6 +22,7 @@ import {
 } from "./seed-data.mjs";
 import { closedSessions, liveSessions } from "./seed-sessions.mjs";
 import { accessLogsFrom, gateEventsFrom } from "./seed-access.mjs";
+import { workNotes } from "./seed-notes.mjs";
 
 const app = initializeApp({
   credential: cert({
@@ -96,6 +97,7 @@ async function pruneCollection(name, keepIds) {
 const sessions = [...liveSessions(), ...closedSessions()];
 const accessLogs = accessLogsFrom(sessions);
 const gateEvents = gateEventsFrom(accessLogs);
+const notes = workNotes();
 
 console.log("Firestore 시드");
 await seedCollection("ppeItems", ppeItems, "code");
@@ -109,6 +111,7 @@ await seedCollection("gateSessions", sessions, "id");
 await seedCollection("approvalRequests", approvalRequests, "id");
 await seedCollection("accessLogs", accessLogs, "id");
 await seedCollection("gateEvents", gateEvents, "idempotencyKey");
+await seedCollection("workNotes", notes, "id");
 
 console.log("\n정리");
 await pruneCollection("employees", new Set(employees.map((e) => e.empNo)));
@@ -119,7 +122,7 @@ await pruneCollection("gates", new Set(gates.map((g) => g.id)));
 await pruneCollection("approvalRequests", new Set(approvalRequests.map((r) => r.id)));
 await pruneCollection("accessLogs", new Set(accessLogs.map((l) => l.id)));
 await pruneCollection("gateEvents", new Set(gateEvents.map((e) => e.idempotencyKey)));
-await pruneCollection("workNotes", new Set());
+await pruneCollection("workNotes", new Set(notes.map((n) => n.id)));
 
 console.log("\nAuth 계정");
 const loginable = employees.filter((e) => e.login);

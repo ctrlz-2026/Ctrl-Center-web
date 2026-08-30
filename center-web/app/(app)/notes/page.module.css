@@ -1,0 +1,156 @@
+/* 작업장별 특이사항 — 좌 작업장 목록 / 우 선택한 곳의 메모들. */
+
+.siteList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 작업장 한 줄. 선택되면 primary 틴트로 채웁니다(표 선택 행과 같은 규칙). */
+.siteItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--radius-10);
+  text-align: left;
+  color: var(--label-normal);
+  transition: background var(--motion-fast) var(--ease-standard);
+}
+
+.siteItem:hover {
+  background: var(--ct-page-bg);
+}
+
+/* 표 행과 같은 규칙으로 왼쪽에 띠를 세웁니다. 틴트만으로는 옆에 있는
+   파란 건수 칩과 헷갈려서 어느 줄이 선택된 건지 한눈에 안 들어왔습니다. */
+.siteItemActive,
+.siteItemActive:hover {
+  background: var(--ct-tint-primary);
+  box-shadow: inset 3px 0 0 0 var(--primary-normal);
+}
+
+.siteName {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.siteItemActive .siteName {
+  color: var(--primary-normal);
+}
+
+/* 건수. 0 이면 눈에 덜 띄게 낮춥니다 — 읽을 게 없는 곳이니까요. */
+.count {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  background: var(--fill-normal);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--label-alternative);
+}
+
+.countHas {
+  background: var(--ct-tint-primary);
+  color: var(--primary-normal);
+}
+
+/* ── 메모 목록 ─────────────────────────────────────────────── */
+
+.noteList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 메모 한 장. 왼쪽 띠는 "여기 읽을 게 있다"는 표시입니다. */
+.note {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px;
+  border-radius: var(--radius-12);
+  background: var(--ct-page-bg);
+  box-shadow: inset 3px 0 0 0 var(--primary-normal);
+}
+
+/* 내가 쓴 메모는 남의 것과 구분되게 틴트를 깝니다. */
+.noteMine {
+  background: var(--ct-tint-primary);
+}
+
+.noteHead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.author {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 600;
+  color: var(--label-normal);
+}
+
+.mineTag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--primary-normal);
+}
+
+.when {
+  margin-left: auto;
+  font-size: 12px;
+  letter-spacing: 0.025em;
+  color: var(--label-alternative);
+  white-space: nowrap;
+}
+
+.work {
+  font-size: 12px;
+  line-height: 1.4;
+  letter-spacing: 0.025em;
+  color: var(--label-alternative);
+}
+
+.body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--label-normal);
+  white-space: pre-wrap;
+}
+
+.empty {
+  padding: 28px 0;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--label-alternative);
+}
+
+.lead {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--label-alternative);
+}
+
+@media (max-width: 767px) {
+  .note {
+    padding: 14px 16px;
+  }
+}
