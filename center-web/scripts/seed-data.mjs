@@ -73,6 +73,17 @@ export const workCodes = [
     estimatedMinutes: 70, active: true },
 ];
 
+/* ─── 실제 팀원 사번 ─────────────────────────────────────────────────────────
+ * 로그인 계정이 나가는 4명입니다. 사번이 세션·요청·출입기록에서 참조되므로
+ * 여기 한 곳에서만 정의하고 나머지 파일은 이걸 가져다 씁니다 —
+ * 흩어놓으면 사번 하나 바꿀 때 참조 하나를 빠뜨리게 됩니다. */
+export const TEAM = {
+  yoon: "202533795", // 윤지윤 · 안전관리자
+  kim: "202533690", // 김병오 · 팀장(승인자)
+  jeong: "202533872", // 정천호 · 작업자
+  park: "202633671", // 박상하 · 작업자
+};
+
 /* ─── 직원 ───────────────────────────────────────────────────────────────────
  * 앞의 4명이 실제 팀원(로그인 계정 발급), 나머지는 관제 화면을 채우는 가상 인물입니다.
  * 가상 인물도 employees 에 있어야 게이트 세션의 참여인원이 이름으로 표시됩니다.
@@ -82,7 +93,7 @@ export const workCodes = [
 export const employees = [
   // ── 실제 팀원 (로그인 가능) ──
   {
-    empNo: "2016-0101", name: "윤지윤", team: "안전관리팀", rank: "부장",
+    empNo: TEAM.yoon, name: "윤지윤", team: "안전관리팀", rank: "부장",
     role: "safety_admin", hiredOn: "2016-03-02", completedCount: 0, active: true,
     login: true,
     qualifications: [
@@ -91,7 +102,7 @@ export const employees = [
     ],
   },
   {
-    empNo: "2015-0207", name: "김병오", team: "생산1팀", rank: "팀장",
+    empNo: TEAM.kim, name: "김병오", team: "생산1팀", rank: "팀장",
     role: "leader", hiredOn: "2015-02-07", completedCount: 1043, active: true,
     login: true,
     qualifications: [
@@ -101,7 +112,7 @@ export const employees = [
     ],
   },
   {
-    empNo: "2020-0318", name: "정천호", team: "생산1팀", rank: "주임",
+    empNo: TEAM.jeong, name: "정천호", team: "생산1팀", rank: "주임",
     role: "worker", hiredOn: "2020-03-18", completedCount: 287, active: true,
     login: true,
     qualifications: [
@@ -110,7 +121,7 @@ export const employees = [
     ],
   },
   {
-    empNo: "2021-0442", name: "박상하", team: "생산2팀", rank: "사원",
+    empNo: TEAM.park, name: "박상하", team: "생산2팀", rank: "사원",
     role: "worker", hiredOn: "2021-04-12", completedCount: 156, active: true,
     login: true,
     qualifications: [

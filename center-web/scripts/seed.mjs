@@ -11,6 +11,7 @@ import { cert, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import {
+  TEAM,
   employeeCards,
   employees,
   gates,
@@ -33,7 +34,11 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 const emailOf = (empNo) => `${empNo}@center.local`;
-const DEMO_PASSWORD = "center1234";
+
+/** 초기 비밀번호는 **사번 뒤에 1234**. 계정을 나눠줄 때 따로 안내할 게 없고,
+ *  사번만 알면 첫 로그인이 되기 때문입니다.
+ *  회원가입·비밀번호 변경 기능이 붙으면 이 규칙은 "초기 발급값"으로만 남습니다. */
+const initialPassword = (empNo) => `${empNo}1234`;
 const now = Date.now();
 const at = (minutesAgo) => new Date(now - minutesAgo * 60_000).toISOString();
 
@@ -41,14 +46,14 @@ const at = (minutesAgo) => new Date(now - minutesAgo * 60_000).toISOString();
  * 본인이 올린 요청은 본인이 승인할 수 없기 때문입니다. */
 const approvalRequests = [
   {
-    id: "req-seed-1", requesterId: "2020-0318", workCode: "A-3", siteId: "site-b2",
+    id: "req-seed-1", requesterId: TEAM.jeong, workCode: "A-3", siteId: "site-b2",
     scheduledAt: at(-60),
     reason: "정기 점검 주기 도래로 사다리 상단 고정부 확인이 필요합니다",
     status: "pending", approverId: null, decidedAt: null, rejectReason: null,
     createdAt: at(28),
   },
   {
-    id: "req-seed-2", requesterId: "2021-0442", workCode: "E-4", siteId: "site-c0",
+    id: "req-seed-2", requesterId: TEAM.park, workCode: "E-4", siteId: "site-c0",
     scheduledAt: at(-120), reason: null,
     status: "pending", approverId: null, decidedAt: null, rejectReason: null,
     createdAt: at(46),
@@ -120,24 +125,18 @@ console.log("\nAuth 계정");
 const loginable = employees.filter((e) => e.login);
 for (const e of loginable) {
   const email = emailOf(e.empNo);
+  const password = initialPassword(e.empNo);
   let user;
   try {
     user = await auth.getUserByEmail(email);
-    await auth.updateUser(user.uid, {
-      password: DEMO_PASSWORD,
-      displayName: e.name,
-    });
+    await auth.updateUser(user.uid, { password, displayName: e.name });
   } catch {
-    user = await auth.createUser({
-      email,
-      password: DEMO_PASSWORD,
-      displayName: e.name,
-    });
+    user = await auth.createUser({ email, password, displayName: e.name });
   }
   // 역할은 토큰 클레임에 박습니다. 서버가 이 값으로 권한을 판정합니다.
   await auth.setCustomUserClaims(user.uid, { role: e.role, empNo: e.empNo });
   console.log(
-    `  ${e.empNo}  ${e.name.padEnd(4)} ${e.rank.padEnd(3)} ${e.role.padEnd(12)} ${email}`,
+    `  ${e.empNo}  ${e.name.padEnd(4)} ${e.rank.padEnd(3)} ${e.role.padEnd(12)} ${password}`,
   );
 }
 
@@ -150,4 +149,4 @@ if (staleUsers.length > 0) {
   console.log(`  옛 계정 ${staleUsers.length}개 삭제`);
 }
 
-console.log(`\n완료. 데모 비밀번호: ${DEMO_PASSWORD}`);
+console.log("\n완료. 초기 비밀번호는 사번 뒤에 1234 입니다 (예: 2025336901234).");
