@@ -24,6 +24,9 @@
   color: var(--label-alternative);
 }
 
+/* 왼쪽 3px 띠가 상태색입니다 (--row-accent, 없으면 투명). 배지를 읽지 않고도
+   빨강=차단 / 파랑=진행중 이 한눈에 들어오게 하려는 것이고, border 가 아니라
+   inset box-shadow 라 띠가 생겨도 칸 폭이 밀리지 않습니다. */
 .row {
   display: grid;
   align-items: center;
@@ -33,7 +36,9 @@
   line-height: 1.5;
   letter-spacing: 0.015em;
   color: var(--label-normal);
-  box-shadow: inset 0 1px 0 0 var(--line-normal-alternative);
+  box-shadow:
+    inset 0 1px 0 0 var(--line-normal-alternative),
+    inset 3px 0 0 0 var(--row-accent, transparent);
   transition: background var(--motion-fast) var(--ease-standard);
 }
 
@@ -49,6 +54,7 @@
   outline: 0;
   box-shadow:
     inset 0 1px 0 0 var(--line-normal-alternative),
+    inset 3px 0 0 0 var(--row-accent, transparent),
     var(--state-focus-ring);
 }
 
@@ -110,6 +116,8 @@
     display: none;
   }
 
+  /* 카드 리스트에서는 행이 세로로 길어져서, 데스크톱과 같은 1px 선으로는
+     어디서 한 행이 끝나는지 안 보입니다. 띠를 굵히고 선을 진하게 올립니다. */
   .row {
     display: flex;
     flex-direction: column;
@@ -117,7 +125,10 @@
     justify-content: center;
     gap: 4px;
     height: auto;
-    padding: 12px 16px;
+    padding: 14px 16px 14px 18px;
+    box-shadow:
+      inset 0 1px 0 0 var(--line-normal-neutral),
+      inset 4px 0 0 0 var(--row-accent, transparent);
   }
 
   .cell {

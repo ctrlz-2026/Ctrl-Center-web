@@ -9,11 +9,13 @@ import { ROLE_LABEL, canApprove, canRequestWork, canViewMyPage } from "@/lib/typ
 import type { Role } from "@/lib/types";
 import styles from "./TopNav.module.css";
 
-/** 메뉴는 역할이 정합니다. 안전관리자에게는 관제만 남습니다. */
+/** 메뉴는 역할이 정합니다. 안전관리자에게는 관제만 남습니다.
+ *  전체 현황이 맨 앞입니다 — 역할과 상관없이 전원이 보는 유일한 화면이고,
+ *  로고를 눌렀을 때 돌아올 기본 화면이기도 합니다. */
 const MENU: { href: string; label: string; allow: (r: Role) => boolean }[] = [
+  { href: "/dashboard", label: "전체 현황", allow: () => true },
   { href: "/requests/new", label: "작업 승인 요청", allow: canRequestWork },
   { href: "/approvals", label: "승인함", allow: canApprove },
-  { href: "/dashboard", label: "전체 현황", allow: () => true },
   { href: "/me", label: "마이페이지", allow: canViewMyPage },
 ];
 

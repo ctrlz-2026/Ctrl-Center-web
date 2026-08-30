@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import styles from "./DataTable.module.css";
 
 export interface Column<T> {
@@ -24,6 +24,9 @@ interface DataTableProps<T> {
   /** 행을 펼쳤을 때 표 아래에 끼워 넣을 내용. `isExpanded` 와 같이 씁니다. */
   renderExpanded?: (row: T) => ReactNode;
   isExpanded?: (row: T) => boolean;
+  /** 행 왼쪽에 세울 상태색 띠. 배지를 읽지 않고도 상태가 구분되게 합니다.
+   *  값이 없으면 띠가 없습니다. */
+  rowAccent?: (row: T) => string | undefined;
 }
 
 export function DataTable<T>({
@@ -37,6 +40,7 @@ export function DataTable<T>({
   emptyText = "표시할 항목이 없어요.",
   renderExpanded,
   isExpanded,
+  rowAccent,
 }: DataTableProps<T>) {
   const template = columns.map((c) => c.width).join(" ");
 
@@ -81,6 +85,14 @@ export function DataTable<T>({
             </span>
           ));
 
+          // 상태색 띠는 레이아웃을 밀지 않게 CSS 변수로만 넘기고, 그리기는
+          // inset box-shadow 가 합니다 (경계선은 border 가 아니라는 규칙 1번).
+          const accent = rowAccent?.(row);
+          const rowStyle = {
+            gridTemplateColumns: template,
+            ...(accent ? { "--row-accent": accent } : {}),
+          } as CSSProperties;
+
           // 행 클릭이 곧 선택인 화면(W2 작업코드, W3 승인함, W5 이력, W4 펼치기)이
           // 있습니다. 행을 button 으로 내면 셀 안의 링크·버튼이 버튼 안에 중첩돼
           // 유효하지 않은 마크업이 되므로, div 에 tabIndex 와 키 핸들러를 달아
@@ -93,7 +105,7 @@ export function DataTable<T>({
                 tabIndex={0}
                 aria-selected={selected}
                 className={classes}
-                style={{ gridTemplateColumns: template }}
+                style={rowStyle}
                 onClick={() => onRowClick(row)}
                 onKeyDown={(e) => {
                   if (e.target !== e.currentTarget) return;
@@ -110,7 +122,7 @@ export function DataTable<T>({
                 key={rowKey(row)}
                 role="row"
                 className={classes}
-                style={{ gridTemplateColumns: template }}
+                style={rowStyle}
               >
                 {content}
               </div>

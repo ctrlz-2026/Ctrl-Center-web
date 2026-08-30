@@ -59,13 +59,18 @@ export const ROLE_LABEL: Record<Role, string> = {
 /** 권한은 화면마다 흩어놓지 않고 여기 한 곳에서만 정합니다.
  *  나중에 권한 규칙이 바뀌어도 이 함수들만 고치면 됩니다. */
 
-/** 작업 신청은 **작업자만** 합니다.
+/** 작업 신청은 **작업자와 팀장**이 합니다.
  *
- *  결재권자(팀장)를 제외하는 이유: 본인이 올린 요청은 본인이 승인할 수 없는데,
- *  팀에 승인자가 한 명이면 그 요청은 처리할 사람이 없어 영원히 대기로 남습니다.
- *  승인자가 여러 명인 조직으로 바뀌면 이 규칙을 풀 수 있습니다. */
+ *  팀장도 현장 작업에 직접 들어갑니다(김병오 팀장의 작업 이력이 그 증거입니다).
+ *  처음에는 팀장을 제외했었는데, 그건 "본인 요청은 본인이 승인 못 한다"는 규칙
+ *  때문에 팀에 승인자가 한 명이면 그 요청이 영원히 대기로 남기 때문이었습니다.
+ *
+ *  **그 데드락은 여전히 존재합니다** — 팀장이 올린 요청은 다른 승인자가 있어야
+ *  처리됩니다. 승인자가 한 명뿐인 팀에서 팀장이 신청하면 대기로 남으므로,
+ *  승인자를 늘리거나 안전관리자에게 대결 권한을 주는 결정이 필요합니다.
+ *  (docs/backend-design.md §7.3) */
 export function canRequestWork(role: Role) {
-  return role === "worker";
+  return role === "worker" || role === "leader";
 }
 
 export function canApprove(role: Role) {
@@ -205,6 +210,19 @@ export const SITE_STATUS_TONE: Record<SiteStatusState, StatusTone> = {
   verifying: "pending",
   waiting: "neutral",
   blocked: "danger",
+};
+
+/** 표의 행 왼쪽에 세우는 상태색 띠. 배지를 읽지 않고도 빨강=차단,
+ *  파랑=진행중이 눈에 먼저 들어오게 하려는 것입니다.
+ *  대기·검증중은 손이 갈 일이 없어 띠를 주지 않습니다 — 전부 색을 칠하면
+ *  아무것도 강조되지 않습니다. */
+export const SITE_STATUS_ACCENT: Record<SiteStatusState, string | undefined> = {
+  approved: "var(--green-50)",
+  unlocked: "var(--primary-normal)",
+  working: "var(--primary-normal)",
+  verifying: undefined,
+  waiting: undefined,
+  blocked: "var(--red-50)",
 };
 
 export interface SiteStatus {

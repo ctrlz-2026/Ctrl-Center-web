@@ -9,7 +9,11 @@ import { DataTable } from "@/components/DataTable";
 import type { Column } from "@/components/DataTable";
 import { Primary, Side, Split, Stack } from "@/components/Layout";
 import { useRequests } from "@/lib/store";
-import { SITE_STATUS_LABEL, SITE_STATUS_TONE } from "@/lib/types";
+import {
+  SITE_STATUS_ACCENT,
+  SITE_STATUS_LABEL,
+  SITE_STATUS_TONE,
+} from "@/lib/types";
 import type { SiteStatus } from "@/lib/types";
 import styles from "./page.module.css";
 
@@ -188,6 +192,7 @@ export default function DashboardPage() {
                 setExpandedId((cur) => (cur === s.id ? null : s.id))
               }
               isExpanded={(s) => expandedId === s.id}
+              rowAccent={(s) => SITE_STATUS_ACCENT[s.state]}
               renderExpanded={(s) => (
                 <div className={styles.expandGrid}>
                   <InfoRow label="작업장">{s.site}</InfoRow>
