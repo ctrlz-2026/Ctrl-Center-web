@@ -181,12 +181,38 @@ export interface ApprovalRequest {
   rejectReason?: string;
 }
 
+export type SiteStatusState =
+  | "working"
+  | "verifying"
+  | "waiting"
+  | "blocked"
+  | "approved"
+  | "unlocked";
+
+export const SITE_STATUS_LABEL: Record<SiteStatusState, string> = {
+  approved: "승인됨",
+  unlocked: "문 열림",
+  working: "진행중",
+  verifying: "검증중",
+  waiting: "대기",
+  blocked: "차단",
+};
+
+export const SITE_STATUS_TONE: Record<SiteStatusState, StatusTone> = {
+  approved: "success",
+  unlocked: "pending",
+  working: "active",
+  verifying: "pending",
+  waiting: "neutral",
+  blocked: "danger",
+};
+
 export interface SiteStatus {
   /** 표의 행 키. 같은 작업장에 승인 대기와 진행중이 동시에 있을 수 있어
    *  작업장+작업명 조합으로는 유일하지 않습니다. */
   id: string;
   site: string;
-  state: "working" | "verifying" | "waiting" | "blocked" | "approved" | "unlocked";
+  state: SiteStatusState;
   elapsed: string;
   /** 예상 소요시간을 넘겼는지. 넘기면 경과를 orange-50 600 으로 표기합니다.
    *  작업 "예정 시각"과는 다른 값입니다 — 이쪽은 얼마나 걸리느냐입니다. */
@@ -202,6 +228,10 @@ export interface SiteStatus {
   sessionId?: string;
   /** 예정 시각 대비 언제 시작했는지. 진입을 막지는 않고 기록만 남깁니다. */
   scheduleNote?: string;
+  /** 실제 시작 시각 (HH:mm). 세션이 생긴 것만 있습니다. */
+  startedAtLabel?: string;
+  /** 시작 시각 + 예상 소요시간 (HH:mm). 작업코드에 예상시간이 없으면 없습니다. */
+  expectedEndLabel?: string;
 }
 
 export interface Anomaly {

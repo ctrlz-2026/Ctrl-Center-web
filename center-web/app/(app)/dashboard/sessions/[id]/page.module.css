@@ -1,0 +1,68 @@
+/* W4 상세 — 작업장별 현황에서 작업 제목을 눌러 들어오는 페이지.
+   지금은 세션 정보만 보여주는 틀이고, 문 열림 시뮬레이션은 별도로 채워집니다. */
+
+.back {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--label-alternative);
+  text-decoration: none;
+  width: fit-content;
+}
+
+.back:hover {
+  text-decoration: underline;
+}
+
+.headRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.site {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--label-alternative);
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 24px;
+}
+
+@media (max-width: 599px) {
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border-radius: var(--radius-12);
+  background: var(--ct-page-bg);
+  box-shadow: var(--line-inset-normal);
+}
+
+.placeholderTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--label-normal);
+}
+
+.placeholderBody {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--label-alternative);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}

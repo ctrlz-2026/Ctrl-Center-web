@@ -80,6 +80,19 @@
   text-align: center;
 }
 
+.expandGroup {
+  display: contents;
+}
+
+/* 행을 펼쳤을 때 표 안에 끼워 넣는 요약 패널. 행 배경(page-bg)과 이어 보이게
+   같은 톤을 쓰고, 진짜 상세는 여기가 아니라 제목을 눌러 들어가는 페이지에 있다는
+   걸 표시하려고 옅게만 채웁니다. */
+.expandedRow {
+  padding: 14px 16px;
+  background: var(--ct-page-bg);
+  box-shadow: inset 0 1px 0 0 var(--line-normal-alternative);
+}
+
 .empty {
   display: grid;
   place-items: center;

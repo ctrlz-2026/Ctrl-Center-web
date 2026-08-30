@@ -10,11 +10,20 @@ import type { Anomaly, SiteStatus } from "@/lib/types";
  * 이 코드는 그대로 두고 데이터만 진짜로 바뀝니다. */
 
 export interface DashboardData {
-  kpis: { label: string; value: string; alert: boolean }[];
+  /** hint 는 KPI 라벨만 보고 뜻을 짐작하기 어려운 값(입장 인원 · 1차 검증 통과율)이
+   *  헷갈린다는 피드백을 받아 추가했습니다 — 라벨 아래 한 줄로 뭘 세는 값인지 밝힙니다. */
+  kpis: { label: string; value: string; alert: boolean; hint: string }[];
   siteStatuses: SiteStatus[];
   anomalies: Anomaly[];
   todaySummary: { label: string; value: string }[];
 }
+
+const hhmm = new Intl.DateTimeFormat("ko-KR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: "Asia/Seoul",
+});
 
 const LIVE_STATES = ["tagging", "face", "verifying", "unlocking", "working"];
 
@@ -93,6 +102,7 @@ export async function loadDashboard(): Promise<DashboardData> {
         s.state === "working" && estimated > 0 && minutes > estimated;
 
       const view = toViewState(s.state);
+      const startedAtDate = s.state === "blocked" ? null : new Date(s.startedAt);
       return {
         id: s.id,
         sessionId: s.id,
@@ -106,6 +116,11 @@ export async function loadDashboard(): Promise<DashboardData> {
         // 문 열림은 곧 작업 시작이라 "unlocked" 에는 더 이상 수동 버튼이 없습니다.
         control: view === "working" ? ("end" as const) : null,
         scheduleNote: scheduleNote(s.scheduledAt, s.startedAt),
+        startedAtLabel: startedAtDate ? hhmm.format(startedAtDate) : undefined,
+        expectedEndLabel:
+          startedAtDate && estimated > 0
+            ? hhmm.format(new Date(startedAtDate.getTime() + estimated * 60_000))
+            : undefined,
       };
     })
     // 손이 가야 하는 것부터 위로: 차단 → 진행중 → 나머지
@@ -182,13 +197,29 @@ export async function loadDashboard(): Promise<DashboardData> {
     closed.length > 0 ? Math.round((firstTryPass / closed.length) * 100) : 0;
 
   const kpis = [
-    { label: "진행중 작업", value: String(working.length), alert: false },
-    { label: "입장 인원", value: `${entered}명`, alert: false },
-    { label: "1차 검증 통과율", value: `${passRate}%`, alert: false },
+    {
+      label: "진행중 작업",
+      value: String(working.length),
+      alert: false,
+      hint: "지금 문이 열려 작업 중인 건수",
+    },
+    {
+      label: "입장 인원",
+      value: `${entered}명`,
+      alert: false,
+      hint: "진행 중인 작업에 실제로 들어가 있는 인원 합계",
+    },
+    {
+      label: "1차 검증 통과율",
+      value: `${passRate}%`,
+      alert: false,
+      hint: "끝난 작업 중 얼굴·보호구 검증을 재시도 없이 통과한 비율",
+    },
     {
       label: "이상 상황",
       value: String(anomalies.length),
       alert: anomalies.length > 0,
+      hint: "예상시간 초과·자격 미달 차단 등 지금 확인이 필요한 건수",
     },
   ];
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
@@ -8,20 +9,9 @@ import { DataTable } from "@/components/DataTable";
 import type { Column } from "@/components/DataTable";
 import { Primary, Side, Split, Stack } from "@/components/Layout";
 import { useRequests } from "@/lib/store";
-import type { SiteStatus, StatusTone } from "@/lib/types";
+import { SITE_STATUS_LABEL, SITE_STATUS_TONE } from "@/lib/types";
+import type { SiteStatus } from "@/lib/types";
 import styles from "./page.module.css";
-
-const SITE_STATE: Record<
-  SiteStatus["state"],
-  { label: string; tone: StatusTone }
-> = {
-  approved: { label: "승인됨", tone: "success" },
-  unlocked: { label: "문 열림", tone: "pending" },
-  working: { label: "진행중", tone: "active" },
-  verifying: { label: "검증중", tone: "pending" },
-  waiting: { label: "대기", tone: "neutral" },
-  blocked: { label: "차단", tone: "danger" },
-};
 
 const CONTROL_LABEL = {
   unlock: "임시 문열림",
@@ -39,7 +29,7 @@ function buildColumns(
     header: "상태",
     width: "130px",
     render: (s) => (
-      <Badge tone={SITE_STATE[s.state].tone}>{SITE_STATE[s.state].label}</Badge>
+      <Badge tone={SITE_STATUS_TONE[s.state]}>{SITE_STATUS_LABEL[s.state]}</Badge>
     ),
   },
   {
@@ -66,7 +56,20 @@ function buildColumns(
     width: "1fr",
     render: (s) => (
       <span className={styles.workCell}>
-        <span>{s.work}</span>
+        {/* 세션이 생긴 작업만 상세 페이지가 있습니다. 승인 대기(세션 없음)는
+            눌러 들어갈 곳이 없어 그냥 글자로 둡니다. 행 클릭(펼치기)과 겹치지
+            않게 링크 클릭은 버블링을 막습니다. */}
+        {s.sessionId ? (
+          <Link
+            href={`/dashboard/sessions/${s.sessionId}`}
+            className={styles.workTitle}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {s.work}
+          </Link>
+        ) : (
+          <span className={styles.workTitle}>{s.work}</span>
+        )}
         {/* 예정 시각은 진입을 막지 않습니다. 늦거나 일러도 통과시키고 기록만 남깁니다. */}
         {s.scheduleNote ? (
           <span className={styles.scheduleNote}>{s.scheduleNote}</span>
@@ -85,7 +88,10 @@ function buildColumns(
           variant={s.control === "end" ? "outlined" : "solid"}
           color={s.control === "end" ? "assistive" : "primary"}
           disabled={busyId === s.id}
-          onClick={() => onControl(s)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onControl(s);
+          }}
         >
           {busyId === s.id ? "처리 중" : CONTROL_LABEL[s.control]}
         </Button>
@@ -97,6 +103,9 @@ function buildColumns(
 export default function DashboardPage() {
   const { dashboard, status, lastUpdatedAt, loading, gateControl } = useRequests();
   const [busyId, setBusyId] = useState<string | null>(null);
+  // 어느 행을 펼쳤는지. 한 번에 하나만 — 여러 개를 열어두면 표가 길어져서
+  // "지금 뭘 보고 있었는지" 잃어버리기 쉽습니다.
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   /* 젯슨이 없는 동안 여기서 게이트를 손으로 진행시킵니다.
      승인됨 → 임시 문열림(=작업 시작) → 업무 종료 */
@@ -135,6 +144,7 @@ export default function DashboardPage() {
               >
                 {k.value}
               </span>
+              <span className={styles.kpiHint}>{k.hint}</span>
             </div>
           </Card>
         ))}
@@ -174,6 +184,36 @@ export default function DashboardPage() {
               rows={rows}
               rowKey={(s) => s.id}
               emptyText={loading ? "불러오는 중이에요." : "지금 진행중인 작업이 없어요."}
+              onRowClick={(s) =>
+                setExpandedId((cur) => (cur === s.id ? null : s.id))
+              }
+              isExpanded={(s) => expandedId === s.id}
+              renderExpanded={(s) => (
+                <div className={styles.expandGrid}>
+                  <InfoRow label="작업장">{s.site}</InfoRow>
+                  <InfoRow label="인원">{s.headcount}</InfoRow>
+                  <InfoRow label="상태">{SITE_STATUS_LABEL[s.state]}</InfoRow>
+                  {s.startedAtLabel ? (
+                    <InfoRow label="시작 시각">{s.startedAtLabel}</InfoRow>
+                  ) : null}
+                  {s.expectedEndLabel ? (
+                    <InfoRow label="예정 종료">{s.expectedEndLabel}</InfoRow>
+                  ) : null}
+                  {!s.sessionId ? (
+                    <p className={styles.expandNote}>
+                      아직 게이트가 열리지 않았어요 — &ldquo;임시 문열림&rdquo;을
+                      누르면 시작 시각이 기록돼요.
+                    </p>
+                  ) : (
+                    <Link
+                      href={`/dashboard/sessions/${s.sessionId}`}
+                      className={styles.expandLink}
+                    >
+                      자세히 보기 →
+                    </Link>
+                  )}
+                </div>
+              )}
             />
           </Card>
         </Primary>
