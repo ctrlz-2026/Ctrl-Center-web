@@ -21,13 +21,19 @@
 
 ## 화면
 
-| 코드 | 화면 | 역할 |
-| --- | --- | --- |
-| W1 | 로그인 | 사번·비밀번호. 역할은 계정 속성에서 자동 판별 |
-| W2 | 작업 승인 요청 | 작업코드를 고르면 필수인원·보호구가 따라옴 |
-| W3 | 팀장 승인함 | 승인이 곧 게이트 노출 조건 |
-| W4 | 관제 대시보드 | 작업장별 현황·이상 상황. 서버 push로 실시간 갱신 |
-| W5 | 마이페이지 | 자격·작업이력·개인별 출입기록·특이사항 |
+| 코드 | 경로 | 화면 | 누가 보나 |
+| --- | --- | --- | --- |
+| W1 | `/login` | 로그인 | 전원 |
+| — | `/signup` | 가입 신청 | 계정 없는 사람 (인증 없이 열림) |
+| W2 | `/requests/new` | 작업 승인 요청 | 작업자 · 팀장 |
+| W3 | `/approvals` | 팀장 승인함 | 팀장 |
+| W4 | `/dashboard` | 관제 대시보드 | 전원 |
+| W5 | `/me` | 마이페이지 | 작업자 · 팀장 |
+| — | `/notes` | 작업장별 특이사항 | 전원 |
+| — | `/admin` | 계정 관리 | 안전관리자 |
+
+`/dashboard/sessions/[id]` 는 관제에서 작업 제목을 눌러 들어가는 세션 상세입니다.
+젯슨 문열림 시뮬레이션이 들어갈 자리를 비워둔 틀입니다.
 
 ---
 
@@ -89,6 +95,62 @@ node --env-file=.env.local scripts/reset-requests.mjs    # 시연 전 초기화
 `seed.mjs`는 여러 번 돌려도 안전합니다. 진행중 세션은 실행 시점 기준으로 다시 만들어지므로,
 시연 직전에 한 번 돌리면 관제 화면의 경과 시간이 그럴듯해집니다.
 
+> `seed.mjs`를 돌리면 Auth 계정이 다시 만들어져 **열어둔 브라우저는 로그아웃됩니다.**
+> 다시 로그인하면 됩니다.
+
+### 계정
+
+**아이디 = 사번, 초기 비밀번호 = 사번 + `1234`**
+
+| 사번 | 이름 | 역할 | 비밀번호 |
+| --- | --- | --- | --- |
+| 202533690 | 김병오 | 팀장 (승인자) | `2025336901234` |
+| 202533795 | 윤지윤 | 안전관리자 | `2025337951234` |
+| 202533872 | 정천호 | 작업자 | `2025338721234` |
+| 202633671 | 박상하 | 작업자 | `2026336711234` |
+
+사번은 `scripts/seed-data.mjs`의 `TEAM` 한 곳에서만 정의합니다 —
+세션·요청·출입기록이 전부 사번을 참조해서, 흩어놓으면 하나 바꿀 때 참조를 빠뜨립니다.
+
+---
+
+## 배포
+
+**`main`에 push하면 Vercel이 자동으로 재배포합니다.** 따로 할 일이 없습니다.
+
+- 저장소 — `ctrlz-2026/Ctrl-Center-web` (조직 `ctrlz-2026`)
+- 배포 — [ctrl-center-web.vercel.app](https://ctrl-center-web.vercel.app)
+- Vercel 프로젝트 Root Directory는 `center-web`
+
+환경변수는 저장소가 아니라 **Vercel 대시보드**에 있습니다
+(Settings → Environment Variables). 로컬 `.env.local`과 같은 10개입니다.
+
+> 저장소가 Public인 이유 — Vercel Hobby 플랜은 조직의 Private 저장소를 배포하지
+> 못합니다. 비밀키는 `.env.local`에만 있고 그 파일은 `.gitignore`에 있어 올라가지
+> 않으므로 공개로 돌렸습니다.
+
+---
+
+## 다른 컴퓨터에서 이어받기
+
+```bash
+git clone https://github.com/ctrlz-2026/Ctrl-Center-web.git
+cd Ctrl-Center-web/center-web
+npm install
+```
+
+그다음 **`.env.local`을 직접 넣어야 합니다** — 저장소에 없습니다.
+가장 빠른 방법은 쓰던 컴퓨터의 `center-web/.env.local`을 그대로 복사하는 것이고,
+없으면 Firebase 콘솔에서 다시 받습니다(`.env.local.example` 주석 참고).
+
+```bash
+node --env-file=.env.local scripts/check-firebase.mjs   # 연결부터 확인
+npm run dev
+```
+
+Firestore는 클라우드에 있으므로 **시드를 다시 돌릴 필요가 없습니다.**
+데이터가 이미 들어 있고, 컴퓨터가 바뀌어도 그대로 보입니다.
+
 ---
 
 ## 구조
@@ -96,39 +158,74 @@ node --env-file=.env.local scripts/reset-requests.mjs    # 시연 전 초기화
 ```
 center-web/
   app/
-    (auth)/login/          W1
-    (app)/requests/new/    W2
-    (app)/approvals/       W3
-    (app)/dashboard/       W4
-    (app)/me/              W5
+    (auth)/login/            W1
+    (auth)/signup/           가입 신청 (인증 없이 열림)
+    (app)/requests/new/      W2
+    (app)/approvals/         W3
+    (app)/dashboard/         W4
+      sessions/[id]/         세션 상세 — 젯슨 시뮬레이션 자리
+    (app)/me/                W5
+    (app)/notes/             작업장별 특이사항
+    (app)/admin/             계정 관리 (안전관리자)
+    icon.svg                 파비콘 (ZC 키캡 로고)
     api/
-      me/ · requests/      웹용 (Firebase ID 토큰)
-      stream/requests/     SSE 실시간
-      gate/events/         젯슨 수신구 (기기 키)
-      gate/manual/         젯슨 대역 수동 제어 — 기기가 붙으면 삭제
-  components/              Button · Badge · Card · DataTable · Field · Chip · TopNav …
+      me/ · requests/        웹용 (Firebase ID 토큰)
+      notes/                 작업장별 특이사항
+      signup/                가입 신청 — 유일하게 인증 없이 열린 경로
+      admin/accounts/        계정 목록 · 역할/비번/활성
+        [empNo]/profile/     자격 · 사원증 · 얼굴등록 · 작업배정
+      admin/signups/[id]/    가입 승인·거절
+      stream/requests/       SSE 실시간
+      gate/events/           젯슨 수신구 (기기 키)
+      gate/manual/           젯슨 대역 수동 제어 — 기기가 붙으면 삭제
+  components/                Button · Badge · Card · DataTable · Field · Logo · TopNav …
   lib/
-    firebase/              client · admin · queries · dashboard · auth-guard
-    gate-contract.ts       젯슨과 맞추는 계약 (이 파일만 넘기면 됨)
-    types.ts               권한 함수가 여기 한 곳에만 있음
-  scripts/                 시드 · 초기화 · 연결확인
+    firebase/                client · admin · queries · dashboard · auth-guard · user
+    gate-contract.ts         젯슨과 맞추는 계약 (이 파일만 넘기면 됨)
+    types.ts                 권한 함수가 여기 한 곳에만 있음
+  scripts/                   시드 · 초기화 · 연결확인
 docs/
-  backend-design.md        스키마 · API · 실시간 설계
-  screenshots/             화면 캡처
+  backend-design.md          스키마 · API · 실시간 설계 · 결정 기록
+  screenshots/               화면 캡처
 ```
+
+**고칠 때 어디를 보나**
+
+| 바꾸고 싶은 것 | 파일 |
+| --- | --- |
+| 누가 무엇을 할 수 있나 | `lib/types.ts` (권한 함수가 여기에만 있음) |
+| 색·모서리·여백 | `app/tokens/center.css` (개별 화면 CSS 말고 여기) |
+| 사번·시드 데이터 | `scripts/seed-data.mjs` |
+| 젯슨과의 약속 | `lib/gate-contract.ts` |
+| 왜 그렇게 했는지 | `docs/backend-design.md` |
 
 ---
 
 ## 현재 상태
 
-동작하는 것 — 로그인·권한 3역할, 승인 워크플로우(Firestore 영속), 실시간 관제,
-개인별 출입기록, 특이사항, 젯슨 수신구(중복 제거·형식 검증).
+**동작하는 것** — 로그인·권한 3역할, 회원가입과 관리자 승인, 계정 관리(비밀번호
+초기화·역할 변경·비활성화), 자격/사원증/얼굴등록/작업배정 관리, 승인 워크플로우
+(Firestore 영속), 실시간 관제, 작업장별 특이사항, 개인별 출입기록,
+젯슨 수신구(중복 제거·형식 검증). 전부 배포돼 있습니다.
 
-아직인 것 —
+**결정해서 굳힌 것** (배경은 `docs/backend-design.md`)
+
+- 문이 열리면 곧 작업 시작 — "문은 열렸는데 아직 작업 전" 상태를 두지 않습니다
+- 팀장도 작업을 신청하고, **본인 요청을 본인이 승인**합니다. 팀장도 현장에
+  들어가는데 승인자가 한 명뿐이라 막으면 게이트를 통과할 수 없습니다.
+  대신 `selfApproved`로 기록에 남깁니다
+- 작업 배정과 자격은 **별개의 조건**입니다. 배정 확인은 서버, 자격 확인은 게이트
+- 얼굴 사진·특징값은 **웹에 저장하지 않습니다.** 등록 여부만 대장으로 듭니다
+
+**아직인 것**
 
 - **PPE 학습 클래스 확정 대기**: `ppeItems.yoloClass`가 `helmet` 외 전부 `null`.
   모델이 못 잡는 항목을 작업코드 필수 보호구에 넣으면 착용하고 서 있어도 영원히 통과 못 합니다.
 - **사원증 실물 배송 대기**: `employeeCards`가 `TEMP-*` UID, `pending: true`
+  (관리자 콘솔에서 실물 UID를 넣을 수 있게는 해뒀습니다)
 - **게이트 세션 상태 계산**: 인원 충족·해정 판정은 젯슨 연동 후
+- **첫 로그인 비밀번호 변경 강제**: 초기 비밀번호가 사번에서 유추되는 값입니다
+- **작업코드 표기**: `A-3`, `B-7` 같은 코드가 헷갈린다는 의견이 있습니다.
+  빼거나 장소 이름 위주로 바꾸는 안 — 아직 미결
 - **PRD 아키텍처 충돌**: PRD 8장은 "젯슨이 서버, 웹은 시각화 클라이언트"인데 현재 구현은 반대.
   하이브리드 안을 회의 안건으로 올려둔 상태
