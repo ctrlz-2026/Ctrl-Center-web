@@ -45,9 +45,18 @@ export function toSites(m: Masters): SiteOption[] {
     .sort((a, b) => a.name.localeCompare(b.name, "ko"));
 }
 
-/** 작업코드를 화면이 쓰는 모양으로. 보호구 코드는 사람이 읽는 이름으로 바꿉니다. */
-export function toWorkCodes(m: Masters): WorkCode[] {
+/** 작업코드를 화면이 쓰는 모양으로. 보호구 코드는 사람이 읽는 이름으로 바꿉니다.
+ *
+ *  `allowedCodes` 를 주면 그 목록으로 좁힙니다 — 관리자가 배정한 작업만
+ *  신청 화면에 뜨게 하려는 것입니다. 고를 수 없는 걸 보여주고 누른 뒤에
+ *  막는 것보다, 아예 안 보여주는 편이 낫습니다.
+ *  `null`/`undefined` 면 배정 제한이 없다는 뜻이라 전부 돌려줍니다. */
+export function toWorkCodes(
+  m: Masters,
+  allowedCodes?: string[] | null,
+): WorkCode[] {
   return [...m.workCodes.entries()]
+    .filter(([code]) => !allowedCodes || allowedCodes.includes(code))
     .filter(([, w]) => w.active !== false)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([code, w]) => ({

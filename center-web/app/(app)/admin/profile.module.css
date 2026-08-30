@@ -1,0 +1,190 @@
+/* 계정 상세 편집 패널 — 자격 · 사원증 · 얼굴등록 · 작업배정. */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionTitle {
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 700;
+  color: var(--label-normal);
+}
+
+.lead {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--label-alternative);
+}
+
+.none {
+  padding: 12px 0;
+  font-size: 13px;
+  color: var(--label-assistive);
+}
+
+.error {
+  padding: 12px 14px;
+  border-radius: var(--radius-10);
+  background: var(--ct-tint-red);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--red-50);
+}
+
+/* ── 자격 ─────────────────────────────────────────────────── */
+
+.qualList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qualRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-10);
+  background: var(--ct-page-bg);
+}
+
+.qualName {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--label-normal);
+}
+
+/* 만료일. 표 안의 컨트롤이라 본문 입력칸보다 낮게 둡니다. */
+.dateInput {
+  flex: none;
+  height: var(--ct-control-sm);
+  padding: 0 10px;
+  border-radius: var(--radius-8);
+  box-shadow: inset 0 0 0 1px var(--line-normal-neutral);
+  background: var(--ct-surface);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--label-normal);
+}
+
+.dateInput:focus-visible {
+  outline: 0;
+  box-shadow: var(--state-focus-ring);
+}
+
+/* 자격 추가 줄 — 선택 상자와 버튼을 아래 끝으로 맞춥니다. */
+.addRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.addRow > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── 사원증 ───────────────────────────────────────────────── */
+
+.cardRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.cardRow > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── 얼굴 등록 ────────────────────────────────────────────── */
+
+.faceRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ── 작업 배정 ────────────────────────────────────────────── */
+
+.radioRow {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--label-normal);
+  cursor: pointer;
+}
+
+.workGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.workItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-10);
+  background: var(--ct-page-bg);
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-standard);
+}
+
+.workItemOn {
+  background: var(--ct-tint-primary);
+  box-shadow: inset 3px 0 0 0 var(--primary-normal);
+}
+
+.workBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.workName {
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--label-normal);
+}
+
+.workNeeds {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--label-alternative);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 767px) {
+  .workGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .qualRow,
+  .addRow,
+  .cardRow {
+    flex-wrap: wrap;
+  }
+}

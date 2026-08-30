@@ -122,6 +122,35 @@ export interface SignupRequest {
   rejectReason?: string;
 }
 
+/** 관리자가 편집하는 한 사람의 상세.
+ *
+ *  **얼굴 데이터는 여기 없습니다.** 얼굴인식 판정은 전적으로 젯슨이 하고
+ *  (lib/gate-contract.ts), 웹은 결과만 받습니다. 얼굴 사진·특징값은 생체정보라
+ *  웹 DB 에 두면 보관·파기 책임이 통째로 따라옵니다. 그래서 웹은 **등록됐는지
+ *  여부만** 대장으로 들고, 실제 템플릿은 기기에 남깁니다. */
+export interface AccountProfile {
+  empNo: string;
+  name: string;
+  /** 보유 자격 + 만료일. 유효/임박/만료는 저장하지 않고 만료일에서 파생합니다. */
+  qualifications: { code: string; name: string; expiresOn: string }[];
+  /** 사원증 NFC UID. 실물 발급 전에는 `TEMP-*` 이고 pending 입니다. */
+  card: { cardUid: string; issuedAt: string; pending: boolean } | null;
+  /** 젯슨에 얼굴이 등록됐는지. 사진·특징값은 웹에 저장하지 않습니다. */
+  faceEnrolled: boolean;
+  faceEnrolledAt: string | null;
+  /** 이 사람에게 배정된 작업코드.
+   *  `null` = 배정 제한 없음(자격 요건만 봅니다). 배열이면 그 목록으로 제한됩니다.
+   *  **자격과 별개의 조건입니다** — 자격이 있어도 배정되지 않으면 못 하고,
+   *  배정돼 있어도 자격이 만료되면 게이트가 막습니다. */
+  allowedWorkCodes: string[] | null;
+}
+
+/** 관리자 콘솔이 고를 수 있는 선택지 (자격 종류·작업코드). */
+export interface AccountProfileOptions {
+  qualifications: { code: string; name: string }[];
+  workCodes: { code: string; name: string; requiredQualifications: string[] }[];
+}
+
 /** 관리자 콘솔의 계정 한 줄. */
 export interface ManagedAccount {
   empNo: string;

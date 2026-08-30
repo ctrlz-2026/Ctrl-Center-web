@@ -68,9 +68,15 @@ export async function GET(request: Request) {
             )
             .map(({ id, data }) => toRequestView(id, data, masters));
 
+          // 신청 화면에는 이 사람에게 배정된 작업만 띄웁니다 (REST GET 과 같은 규칙).
+          const allowed = masters.employees.get(caller.empNo)?.allowedWorkCodes;
+
           send("requests", {
             requests,
-            workCodes: toWorkCodes(masters),
+            workCodes: toWorkCodes(
+              masters,
+              Array.isArray(allowed) ? allowed : null,
+            ),
             sites: toSites(masters),
             dashboard,
             at: new Date().toISOString(),

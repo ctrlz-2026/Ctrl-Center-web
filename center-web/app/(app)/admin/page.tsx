@@ -19,6 +19,7 @@ import {
   canManageAccounts,
 } from "@/lib/types";
 import type { ManagedAccount, Role, SignupRequest } from "@/lib/types";
+import { AccountProfilePanel } from "./AccountProfilePanel";
 import styles from "./page.module.css";
 
 /* 계정 관리 (안전관리자 전용).
@@ -61,6 +62,8 @@ function AdminPageInner() {
   const [rejecting, setRejecting] = useState<SignupRequest | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [resetInfo, setResetInfo] = useState<string | null>(null);
+  /** 상세를 열어둔 사람. 자격·사원증·얼굴등록·작업배정을 여기서 편집합니다. */
+  const [editing, setEditing] = useState<string | null>(null);
 
   const apply = useCallback((data: AdminData | null) => {
     if (!data) return;
@@ -261,9 +264,15 @@ function AdminPageInner() {
     {
       key: "action",
       header: "처리",
-      width: "210px",
+      width: "290px",
       render: (a) => (
         <span className={styles.rowActions}>
+          <Button
+            size="small"
+            onClick={() => setEditing(a.empNo)}
+          >
+            정보 관리
+          </Button>
           <Button
             size="small"
             variant="outlined"
@@ -366,6 +375,19 @@ function AdminPageInner() {
             </div>
           ) : null}
         </Card>
+
+        {editing ? (
+          <AccountProfilePanel
+            empNo={editing}
+            headers={authHeaders}
+            onSaved={(m) => {
+              show(m);
+              setEditing(null);
+              void reload();
+            }}
+            onClose={() => setEditing(null)}
+          />
+        ) : null}
 
         <Card padding={24} gap={16}>
           <CardHeader>

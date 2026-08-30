@@ -22,9 +22,12 @@ export async function GET(request: Request) {
     .sort((a, b) => String(b.data.createdAt).localeCompare(String(a.data.createdAt)))
     .map(({ id, data }) => toRequestView(id, data, masters));
 
+  // 신청 화면에는 이 사람에게 배정된 작업만 띄웁니다.
+  const allowed = masters.employees.get(caller.empNo)?.allowedWorkCodes;
+
   return NextResponse.json({
     requests,
-    workCodes: toWorkCodes(masters),
+    workCodes: toWorkCodes(masters, Array.isArray(allowed) ? allowed : null),
     sites: toSites(masters),
     me: caller,
   });
@@ -66,6 +69,23 @@ export async function POST(request: Request) {
   const siteId = body.siteId ?? "site-b2";
   if (!masters.sites.has(siteId)) {
     return NextResponse.json({ error: "없는 작업장이에요." }, { status: 400 });
+  }
+
+  /* 작업 배정 확인. 관리자가 이 사람에게 허용한 작업만 신청할 수 있습니다.
+   *
+   * 자격과는 **별개의 조건**입니다 — 자격은 "할 줄 아는가", 배정은 "맡았는가"라
+   * 둘 다 봐야 합니다. 자격 확인은 게이트(젯슨)가 하고, 여기서는 배정만 봅니다.
+   * allowedWorkCodes 가 없으면(null) 배정 제한이 없다는 뜻이라 통과시킵니다. */
+  const me = masters.employees.get(caller.empNo);
+  const allowed = me?.allowedWorkCodes;
+  if (Array.isArray(allowed) && !allowed.includes(body.workCode)) {
+    return NextResponse.json(
+      {
+        error:
+          "배정되지 않은 작업이에요. 안전관리팀에 작업 배정을 요청해주세요.",
+      },
+      { status: 403 },
+    );
   }
 
   const now = new Date().toISOString();
