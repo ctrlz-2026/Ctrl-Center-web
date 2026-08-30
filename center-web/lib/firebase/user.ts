@@ -3,6 +3,14 @@ import type { Qualification, QualificationStatus, Role, User } from "@/lib/types
 /** 사번 → Auth 이메일. 사내 계정이라 실제 메일 주소가 없어 도메인을 붙여 씁니다. */
 export const emailOf = (empNo: string) => `${empNo.trim()}@center.local`;
 
+/** 초기 비밀번호 = 사번 + 1234.
+ *
+ *  계정을 나눠줄 때 따로 안내할 게 없게 하려는 규칙입니다. 가입 승인과
+ *  비밀번호 초기화가 같은 값을 써야 해서 여기 한 곳에 둡니다.
+ *  (시드 스크립트 scripts/seed.mjs 에도 같은 규칙이 있습니다 — .mjs 라
+ *  이 파일을 import 할 수 없어 복제돼 있고, 바꿀 때 같이 바꿔야 합니다.) */
+export const initialPassword = (empNo: string) => `${empNo.trim()}1234`;
+
 /** 만료 임박으로 볼 기간. 스펙의 "D-6" 배지가 이 구간입니다. */
 const EXPIRING_DAYS = 30;
 

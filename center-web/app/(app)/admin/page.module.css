@@ -1,0 +1,124 @@
+/* 계정 관리 — 상단 가입 신청, 하단 계정 목록. */
+
+.lead {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--label-alternative);
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.whoName {
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--label-normal);
+}
+
+.whoSub {
+  font-size: 12px;
+  line-height: 1.4;
+  letter-spacing: 0.025em;
+  color: var(--label-alternative);
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 역할 고르기. 표 안에 들어가는 컨트롤이라 높이를 행보다 낮게 둡니다. */
+.roleSelect {
+  height: var(--ct-control-sm);
+  padding: 0 28px 0 10px;
+  border-radius: var(--radius-8);
+  box-shadow: inset 0 0 0 1px var(--line-normal-neutral);
+  background-color: var(--ct-surface);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--label-normal);
+  cursor: pointer;
+  appearance: none;
+  background-image: linear-gradient(
+      45deg,
+      transparent 50%,
+      var(--label-alternative) 50%
+    ),
+    linear-gradient(135deg, var(--label-alternative) 50%, transparent 50%);
+  background-position:
+    calc(100% - 15px) calc(50% + 1px),
+    calc(100% - 10px) calc(50% + 1px);
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.roleSelect:disabled {
+  cursor: default;
+  color: var(--label-assistive);
+  background-color: var(--ct-page-bg);
+}
+
+/* 비활성 계정은 목록에 남되 눈에 덜 띄게. 지우지 않는 이유는 과거 이력의
+   참여자 이름이 빈칸이 되기 때문입니다. */
+.inactive .whoName,
+.inactive .whoSub {
+  color: var(--label-assistive);
+}
+
+.selfTag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--primary-normal);
+}
+
+.noLogin {
+  font-size: 12px;
+  color: var(--label-assistive);
+}
+
+/* 거절 사유 입력 패널. */
+.rejectPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: var(--radius-12);
+  background: var(--ct-page-bg);
+}
+
+.rejectTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--label-normal);
+}
+
+.rejectActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.empty {
+  padding: 24px 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--label-alternative);
+}
+
+/* 비밀번호 초기화 결과. 관리자가 당사자에게 그대로 불러줄 값입니다. */
+.resetNote {
+  padding: 12px 14px;
+  border-radius: var(--radius-10);
+  background: var(--ct-tint-green);
+  font-size: 13px;
+  line-height: 1.6;
+  font-weight: 500;
+  color: var(--label-normal);
+}

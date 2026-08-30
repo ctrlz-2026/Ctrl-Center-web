@@ -1,0 +1,147 @@
+/* 가입 신청 — 로그인 화면과 같은 카드 1장 레이아웃. */
+
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--ct-page-bg);
+}
+
+.card {
+  width: 440px;
+  max-width: 100%;
+  padding: 40px;
+  border-radius: var(--radius-12);
+  background: var(--ct-surface);
+  box-shadow: var(--elevation-card);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.brand {
+  margin-bottom: 4px;
+}
+
+.title {
+  font-size: 24px;
+  line-height: 1.334;
+  letter-spacing: -0.023em;
+  font-weight: 700;
+  color: var(--label-normal);
+}
+
+.desc {
+  font-size: 15px;
+  line-height: 1.467;
+  font-weight: 500;
+  color: var(--label-alternative);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 팀·직급은 짧아서 한 줄에 둘씩 놓습니다. */
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.footnote {
+  font-size: 13px;
+  line-height: 1.385;
+  font-weight: 500;
+  color: var(--label-assistive);
+}
+
+.switch {
+  flex: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--label-alternative);
+  transition: color var(--motion-fast) var(--ease-standard);
+}
+
+.switch:hover {
+  color: var(--primary-normal);
+}
+
+.switch:focus-visible {
+  outline: 0;
+  border-radius: var(--radius-6);
+  box-shadow: var(--state-focus-ring);
+}
+
+.error {
+  padding: 12px 14px;
+  border-radius: var(--radius-10);
+  background: var(--ct-tint-red);
+  font-size: 13px;
+  line-height: 1.6;
+  font-weight: 500;
+  color: var(--red-50);
+}
+
+/* 신청 완료 화면. 승인이 있어야 로그인된다는 걸 분명히 알려줍니다. */
+.done {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border-radius: var(--radius-12);
+  background: var(--ct-tint-green);
+}
+
+.doneTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--green-50);
+}
+
+.doneBody {
+  font-size: 14px;
+  line-height: 1.6;
+  font-weight: 500;
+  color: var(--label-normal);
+}
+
+@media (max-width: 767px) {
+  .page {
+    padding: var(--ct-gutter-mobile);
+    align-items: start;
+    padding-top: 48px;
+  }
+
+  .card {
+    padding: 24px;
+  }
+
+  .pair {
+    grid-template-columns: 1fr;
+  }
+}

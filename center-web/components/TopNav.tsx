@@ -5,7 +5,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { useSession, useUser } from "@/lib/session";
 import { useRequests } from "@/lib/store";
-import { ROLE_LABEL, canApprove, canRequestWork, canViewMyPage } from "@/lib/types";
+import {
+  ROLE_LABEL,
+  canApprove,
+  canManageAccounts,
+  canRequestWork,
+  canViewMyPage,
+} from "@/lib/types";
 import type { Role } from "@/lib/types";
 import styles from "./TopNav.module.css";
 
@@ -21,6 +27,7 @@ const MENU: { href: string; label: string; allow: (r: Role) => boolean }[] = [
   { href: "/requests/new", label: "작업 승인 요청", allow: canRequestWork },
   { href: "/approvals", label: "승인함", allow: canApprove },
   { href: "/me", label: "마이페이지", allow: canViewMyPage },
+  { href: "/admin", label: "계정 관리", allow: canManageAccounts },
 ];
 
 /** 스펙상 네비 우측 부속물은 화면마다 다릅니다 — 승인함은 "새 요청 N건" 배지,

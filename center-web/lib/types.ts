@@ -85,6 +85,57 @@ export function canViewMyPage(role: Role) {
   return role !== "safety_admin";
 }
 
+/** 계정 관리(가입 승인·비밀번호 초기화·역할 변경·비활성화)는 안전관리자만 합니다.
+ *
+ *  팀장이 아니라 안전관리자인 이유: 팀장은 자기 팀원을 승인하는 사람이라
+ *  계정까지 쥐면 한 사람이 "누구를 들여보낼지"와 "그 사람이 누구인지"를 모두
+ *  정하게 됩니다. 출입통제에서는 이 둘을 갈라놓는 편이 안전합니다. */
+export function canManageAccounts(role: Role) {
+  return role === "safety_admin";
+}
+
+/** 가입 신청 상태. 승인되기 전에는 로그인 계정이 만들어지지 않습니다. */
+export type SignupStatus = "pending" | "approved" | "rejected";
+
+export const SIGNUP_STATUS_LABEL: Record<SignupStatus, string> = {
+  pending: "대기중",
+  approved: "승인됨",
+  rejected: "거절됨",
+};
+
+export const SIGNUP_STATUS_TONE: Record<SignupStatus, StatusTone> = {
+  pending: "pending",
+  approved: "success",
+  rejected: "danger",
+};
+
+/** 가입 신청 한 건. */
+export interface SignupRequest {
+  id: string;
+  empNo: string;
+  name: string;
+  team: string;
+  rank: string;
+  status: SignupStatus;
+  requestedAt: string;
+  /** 거절 사유. 사유 없이 거절할 수 없습니다(반려 규칙과 같은 이유). */
+  rejectReason?: string;
+}
+
+/** 관리자 콘솔의 계정 한 줄. */
+export interface ManagedAccount {
+  empNo: string;
+  name: string;
+  team: string;
+  rank: string;
+  role: Role;
+  /** 퇴사·휴직 처리. 삭제가 아니라 비활성화입니다 — 지우면 과거 작업 이력의
+   *  참여자 이름이 빈칸이 됩니다. */
+  active: boolean;
+  /** 로그인 계정이 실제로 있는지. 가상 인물은 employees 에만 있고 계정이 없습니다. */
+  hasLogin: boolean;
+}
+
 /** 개인별 출입 기록. 세션(작업) 단위가 아니라 **사람 단위**입니다.
  *  누가 어느 카드로 태그해서 언제 들어가고 언제 나왔는지 — 사후 추적의 핵심이며,
  *  입장 수 = 퇴장 수 대조도 이 기록으로 합니다 (PRD 플로우 9번). */

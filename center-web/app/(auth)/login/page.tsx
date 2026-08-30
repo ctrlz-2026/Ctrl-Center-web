@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { FormEvent } from "react";
@@ -108,7 +109,9 @@ export default function LoginPage() {
         </form>
 
         <div className={styles.footer}>
-          <p className={styles.footnote}>계정 문의는 안전관리팀 내선 2114</p>
+          <Link href="/signup" className={styles.switch}>
+            가입 신청
+          </Link>
           <button
             type="button"
             className={styles.switch}
@@ -117,6 +120,7 @@ export default function LoginPage() {
             {isAdmin ? "작업자 로그인으로" : "관리자"}
           </button>
         </div>
+        <p className={styles.footnote}>계정 문의는 안전관리팀 내선 2114</p>
       </div>
     </main>
   );

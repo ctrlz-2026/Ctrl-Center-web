@@ -33,9 +33,7 @@ export function RequireRole({
             color: "var(--label-alternative)",
           }}
         >
-          {user.role === "leader"
-            ? "결재권자는 작업을 신청하지 않아요. 본인이 올린 요청은 본인이 승인할 수 없어서, 처리할 사람이 없는 요청이 생기기 때문이에요."
-            : `${ROLE_LABEL[user.role]} 계정은 작업 신청과 승인을 하지 않아요. 상단 메뉴의 전체 현황에서 관제 화면을 볼 수 있어요.`}
+          {`${ROLE_LABEL[user.role]} 계정으로는 열 수 없는 화면이에요. 상단 메뉴의 전체 현황과 특이사항은 누구나 볼 수 있어요.`}
         </p>
       </Card>
     </Stack>
