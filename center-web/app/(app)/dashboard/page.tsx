@@ -25,7 +25,6 @@ const SITE_STATE: Record<
 
 const CONTROL_LABEL = {
   unlock: "임시 문열림",
-  start: "작업 시작",
   end: "업무 종료",
 } as const;
 
@@ -100,7 +99,7 @@ export default function DashboardPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   /* 젯슨이 없는 동안 여기서 게이트를 손으로 진행시킵니다.
-     승인됨 → 임시 문열림 → 작업 시작 → 업무 종료 */
+     승인됨 → 임시 문열림(=작업 시작) → 업무 종료 */
   async function handleControl(s: SiteStatus) {
     if (!s.control || busyId) return;
     setBusyId(s.id);

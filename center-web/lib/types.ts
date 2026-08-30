@@ -194,8 +194,9 @@ export interface SiteStatus {
   headcount: string;
   work: string;
   /** 젯슨이 없는 동안 웹에서 수동으로 진행시키기 위한 버튼.
+   *  문 열림은 곧 작업 시작이라 별도 "start" 단계는 없습니다.
    *  젯슨이 붙으면 이 필드는 null 이 되고 기기가 상태를 밀어 올립니다. */
-  control: "unlock" | "start" | "end" | null;
+  control: "unlock" | "end" | null;
   /** 수동 제어에 필요한 참조. */
   requestId?: string;
   sessionId?: string;

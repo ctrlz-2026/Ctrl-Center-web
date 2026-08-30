@@ -103,10 +103,8 @@ export async function loadDashboard(): Promise<DashboardData> {
         headcount: `${s.enteredCount ?? 0} / ${wc?.requiredHeadcount ?? s.members.length}명`,
         work: `${s.workCode} ${wc?.name ?? ""}`.trim(),
         // 젯슨이 없는 동안 웹에서 다음 단계로 넘기는 버튼.
-        control:
-          view === "unlocked" ? ("start" as const)
-          : view === "working" ? ("end" as const)
-          : null,
+        // 문 열림은 곧 작업 시작이라 "unlocked" 에는 더 이상 수동 버튼이 없습니다.
+        control: view === "working" ? ("end" as const) : null,
         scheduleNote: scheduleNote(s.scheduledAt, s.startedAt),
       };
     })

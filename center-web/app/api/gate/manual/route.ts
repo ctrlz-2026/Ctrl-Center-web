@@ -8,7 +8,13 @@ import { isResponse, requireCaller } from "@/lib/firebase/auth-guard";
  * 검증을 통과하면 문이 열립니다. 그 기기가 아직 없으므로 관제 화면에서
  * 같은 상태 전이를 손으로 넘길 수 있게 했습니다.
  *
- *   승인됨 ──[임시 문열림]──▶ 문 열림 ──[작업 시작]──▶ 진행중 ──[업무 종료]──▶ 종료
+ *   승인됨 ──[임시 문열림]──▶ 진행중 ──[업무 종료]──▶ 종료
+ *
+ * **문이 열리면 곧 작업 시작입니다.** 예전엔 "문열림"과 "작업 시작"이 별도
+ * 버튼이었는데, 문을 열어놓고 작업을 안 하는 경우는 없다고 판단해 한 동작으로
+ * 합쳤습니다(팀 결정, docs/backend-design.md §7 참고). 젯슨 연동 후에도 이
+ * 규칙은 그대로입니다 — `lib/gate-contract.ts` 의 상태 순서가 `unlocking` 다음
+ * 바로 `working` 인 이유이기도 합니다.
  *
  * 젯슨이 붙으면 이 경로는 지웁니다. 상태 전이 로직 자체는 /api/gate/events 로
  * 옮겨가고, 전이 규칙(어떤 상태에서 어디로 갈 수 있는지)은 그대로 씁니다.
@@ -16,7 +22,7 @@ import { isResponse, requireCaller } from "@/lib/firebase/auth-guard";
  * **예정 시각은 진입을 막지 않습니다.** 미리 시작하든 늦게 시작하든 통과시키고,
  * 예정 대비 얼마나 차이 났는지만 세션에 기록합니다. */
 
-type Action = "unlock" | "start" | "end";
+type Action = "unlock" | "end";
 
 /** 수동 조작으로 만든 출입 기록임을 남깁니다 — 실제 태그·얼굴인식을 거치지
  *  않았으므로 나중에 통계를 낼 때 구분할 수 있어야 합니다. */
@@ -81,28 +87,53 @@ export async function POST(request: Request) {
       .limit(1)
       .get();
 
+    // 문이 열리면 곧 작업 시작이므로 별도 "작업 시작" 클릭 없이 바로 진행중으로 둡니다.
+    const members = [r.requesterId];
     const sessionRef = db.collection("gateSessions").doc();
     await sessionRef.set({
       gateId: gate.empty ? null : gate.docs[0].id,
       siteId: r.siteId,
       workCode: r.workCode,
       approvalRequestId: body.requestId,
-      state: "unlocking",
+      state: "working",
       scheduledAt: r.scheduledAt ?? null,
       startedAt: now,
       endedAt: null,
-      members: [r.requesterId],
-      enteredCount: 0,
+      members,
+      enteredCount: members.length,
       ...MANUAL,
     });
 
-    return NextResponse.json({ ok: true, sessionId: sessionRef.id, state: "unlocking" });
+    // 개인별 출입 기록. 수동 조작이라 얼굴·보호구 판정은 남기지 않습니다 —
+    // 하지 않은 검증을 통과했다고 적으면 기록이 거짓말이 됩니다.
+    const batch = db.batch();
+    for (const empNo of members) {
+      batch.set(db.collection("accessLogs").doc(`${sessionRef.id}_${empNo}`), {
+        sessionId: sessionRef.id,
+        empNo,
+        gateId: gate.empty ? null : gate.docs[0].id,
+        siteId: r.siteId,
+        workCode: r.workCode,
+        cardUid: null,
+        taggedAt: null,
+        faceMatched: null,
+        faceScore: null,
+        ppePassed: null,
+        ppeAttempts: 0,
+        enteredAt: now,
+        exitedAt: null,
+        ...MANUAL,
+      });
+    }
+    await batch.commit();
+
+    return NextResponse.json({ ok: true, sessionId: sessionRef.id, state: "working" });
   }
 
-  // ── 작업 시작 / 업무 종료 ────────────────────────────────────────────────
-  if (body.action !== "start" && body.action !== "end") {
+  // ── 업무 종료 ────────────────────────────────────────────────────────────
+  if (body.action !== "end") {
     return NextResponse.json(
-      { error: "action 은 unlock · start · end 중 하나여야 해요." },
+      { error: "action 은 unlock · end 중 하나여야 해요." },
       { status: 400 },
     );
   }
@@ -117,51 +148,6 @@ export async function POST(request: Request) {
   }
   const s = snap.data()!;
 
-  if (body.action === "start") {
-    if (s.state !== "unlocking") {
-      return NextResponse.json(
-        { error: "문이 열린 작업만 시작할 수 있어요." },
-        { status: 409 },
-      );
-    }
-    const members: string[] = s.members ?? [];
-    await ref.update({
-      state: "working",
-      startedAt: now,
-      enteredCount: members.length,
-    });
-
-    // 개인별 출입 기록. 수동 조작이라 얼굴·보호구 판정은 남기지 않습니다 —
-    // 하지 않은 검증을 통과했다고 적으면 기록이 거짓말이 됩니다.
-    const batch = db.batch();
-    for (const empNo of members) {
-      batch.set(
-        db.collection("accessLogs").doc(`${body.sessionId}_${empNo}`),
-        {
-          sessionId: body.sessionId,
-          empNo,
-          gateId: s.gateId ?? null,
-          siteId: s.siteId,
-          workCode: s.workCode,
-          cardUid: null,
-          taggedAt: null,
-          faceMatched: null,
-          faceScore: null,
-          ppePassed: null,
-          ppeAttempts: 0,
-          enteredAt: now,
-          exitedAt: null,
-          ...MANUAL,
-        },
-        { merge: true },
-      );
-    }
-    await batch.commit();
-
-    return NextResponse.json({ ok: true, state: "working" });
-  }
-
-  // end
   if (s.state !== "working") {
     return NextResponse.json(
       { error: "진행중인 작업만 종료할 수 있어요." },

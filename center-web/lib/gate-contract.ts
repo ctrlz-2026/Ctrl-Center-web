@@ -78,7 +78,11 @@ export interface GateEventsRequest {
   events: GateEvent[];
 }
 
-/** 서버가 판정한 세션 상태. 젯슨은 이걸 그대로 화면에 반영합니다. */
+/** 서버가 판정한 세션 상태. 젯슨은 이걸 그대로 화면에 반영합니다.
+ *
+ * `unlocking` 다음은 항상 `working` 입니다 — 팀 결정으로, 문이 열리면 곧
+ * 작업 시작이고 "문은 열렸지만 아직 작업 전"이라는 중간 상태는 두지 않습니다
+ * (docs/backend-design.md §7). 상태 계산 로직을 붙일 때 이 순서를 지켜주세요. */
 export interface GateStateResponse {
   session_id: string;
   state:

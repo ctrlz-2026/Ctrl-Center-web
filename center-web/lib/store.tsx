@@ -54,7 +54,7 @@ interface RequestsContextValue {
   decide: (id: string, action: "approve" | "reject", reason?: string) => Promise<void>;
   /** 젯슨이 없는 동안 웹에서 게이트를 진행시킵니다. 기기가 붙으면 사라질 기능입니다. */
   gateControl: (
-    action: "unlock" | "start" | "end",
+    action: "unlock" | "end",
     ref: { requestId?: string; sessionId?: string },
   ) => Promise<void>;
 }
@@ -142,7 +142,7 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
 
   const gateControl = useCallback(
     async (
-      action: "unlock" | "start" | "end",
+      action: "unlock" | "end",
       ref: { requestId?: string; sessionId?: string },
     ) => {
       const res = await fetch("/api/gate/manual", {
