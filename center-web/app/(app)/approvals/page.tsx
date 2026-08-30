@@ -26,8 +26,11 @@ function ApprovalsPageInner() {
   const { message, show } = useToast();
   const user = useUser();
 
-  // 자기가 올린 요청은 자기가 승인하지 못하게 막습니다.
-  // (회의 미확정 항목 ③ — 팀장의 셀프 승인을 허용하기로 하면 이 함수만 지우면 됩니다)
+  /* 본인 요청도 본인이 승인합니다 (2026-08-30 결정) — 팀장도 현장에 직접
+   * 들어가는데, 막아두면 승인자가 한 명뿐인 팀에서 팀장 요청이 영원히 대기로
+   * 남아 키오스크를 통과할 수 없습니다.
+   * 다만 **본인 요청이라는 사실은 표시합니다** — 눌러도 되지만 그냥 스쳐
+   * 지나가는 승인이 되지 않게, 자기 것임을 알고 누르게 하려는 것입니다. */
   const isOwnRequest = (r: ApprovalRequest) => r.requesterId === user.employeeId;
 
   const [filter, setFilter] = useState<Filter>("pending");
@@ -93,10 +96,11 @@ function ApprovalsPageInner() {
       header: "처리",
       width: "170px",
       render: (r) =>
-        r.status === "pending" && isOwnRequest(r) ? (
-          <span className={styles.selfNote}>본인 요청</span>
-        ) : r.status === "pending" ? (
+        r.status === "pending" ? (
           <span className={styles.rowActions}>
+            {isOwnRequest(r) ? (
+              <span className={styles.selfNote}>본인</span>
+            ) : null}
             <Button size="small" onClick={() => handleApprove(r)}>
               승인
             </Button>
@@ -197,13 +201,14 @@ function ApprovalsPageInner() {
                   반려하면 작업자에게 사유가 전달돼요.
                 </p>
 
-                {selected.status === "pending" && isOwnRequest(selected) ? (
-                  <p className={styles.notice}>
-                    본인이 올린 요청은 승인하거나 반려할 수 없어요. 다른 승인자가
-                    처리해야 합니다.
-                  </p>
-                ) : selected.status === "pending" ? (
+                {selected.status === "pending" ? (
                   <>
+                    {isOwnRequest(selected) ? (
+                      <p className={styles.selfNotice}>
+                        본인이 올린 요청이에요. 승인하면 기록에 &ldquo;본인
+                        승인&rdquo;으로 남습니다.
+                      </p>
+                    ) : null}
                     <TextArea
                       label="반려 사유"
                       height={80}

@@ -82,8 +82,29 @@
 }
 
 /* 본인이 올린 요청. 승인 버튼 대신 이 문구가 자리를 지킵니다. */
+/* 표 "처리" 열의 본인 요청 표시. 버튼 옆에 붙는 작은 꼬리표라서
+   승인/반려 버튼보다 약하게 둡니다 — 막는 표시가 아니라 알려주는 표시입니다. */
 .selfNote {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: var(--ct-badge-sm-h);
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  background: var(--fill-normal);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--label-alternative);
+}
+
+/* 상세 패널의 본인 요청 안내. 셀프 승인이 기록에 남는다는 걸 누르기 전에
+   알려줍니다 — 허용하되 무심코 지나가지는 않게 하려는 것입니다. */
+.selfNotice {
+  padding: 12px 14px;
+  border-radius: var(--radius-10);
+  background: var(--ct-tint-orange);
   font-size: 13px;
+  line-height: 1.6;
   font-weight: 500;
-  color: var(--label-assistive);
+  color: var(--label-normal);
 }

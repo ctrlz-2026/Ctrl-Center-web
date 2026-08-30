@@ -62,17 +62,20 @@ export async function POST(
     );
   }
 
-  // 자기가 올린 요청은 자기가 처리할 수 없습니다.
-  if (String(current.requesterId) === caller.empNo) {
-    return NextResponse.json(
-      { error: "본인이 올린 요청은 승인하거나 반려할 수 없어요." },
-      { status: 403 },
-    );
-  }
+  /* 본인 요청 셀프 승인은 **허용**합니다 (2026-08-30 결정).
+   *
+   * 원래는 막았는데, 팀장도 현장 작업에 직접 들어갑니다. 막아두면 팀장이 올린
+   * 요청은 승인자가 한 명뿐인 팀에서 영원히 대기로 남고, 그러면 팀장은
+   * 키오스크를 통과하지 못해 자기 작업장에 못 들어갑니다.
+   *
+   * 대신 **누가 승인했는지는 그대로 남깁니다** — approverId 가 요청자와 같으면
+   * 셀프 승인이었다는 뜻이고, 사후에 추적할 수 있어야 합니다.
+   * 승인자가 여러 명인 조직으로 바뀌면 이 허용을 되돌릴 수 있습니다. */
 
   const patch = {
     status: body.action === "approve" ? "approved" : "rejected",
     approverId: caller.empNo,
+    selfApproved: String(current.requesterId) === caller.empNo,
     decidedAt: new Date().toISOString(),
     rejectReason: body.action === "reject" ? reason : null,
   };
