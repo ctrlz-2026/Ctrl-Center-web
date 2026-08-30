@@ -20,31 +20,37 @@
   --green-50: rgb(0, 133, 71);
   --orange-50: rgb(255, 153, 0);
   --red-50: rgb(255, 58, 51);
-  --line-normal-alternative: rgba(112, 115, 124, 0.16);
 
   /* ── 표면 ─────────────────────────────────────────────────── */
-  --ct-page-bg: rgb(247, 247, 248); /* 페이지 배경 · 표 헤더 · 행 hover */
+  /* 배경은 순수 회색(247,247,248) 대신 아주 옅게 따뜻한 쪽으로 틀었습니다.
+     차가운 회색 위의 순백 카드가 화면을 실제보다 딱딱해 보이게 했습니다. */
+  --ct-page-bg: rgb(248, 248, 250); /* 페이지 배경 · 표 헤더 · 행 hover */
   --ct-surface: var(--background-normal-normal); /* 카드 · 표 · 패널 */
   --ct-kiosk-surface: rgb(27, 28, 30); /* 키오스크(Jetson) 참조용 */
   --ct-dim: rgba(23, 23, 25, 0.52); /* 모달 배경 */
   --ct-toast-bg: rgb(23, 23, 25);
 
-  /* ── 상태 틴트 (배경 8%) ──────────────────────────────────── */
-  --ct-tint-primary: rgba(51, 102, 255, 0.08);
-  --ct-tint-green: rgba(0, 133, 71, 0.08);
-  --ct-tint-orange: rgba(255, 153, 0, 0.08);
-  --ct-tint-red: rgba(255, 58, 51, 0.08);
+  /* ── 상태 틴트 ────────────────────────────────────────────── */
+  /* 8% → 10%. 배지 배경이 흰 카드 위에서 거의 안 보여 글자만 떠 있었습니다. */
+  --ct-tint-primary: rgba(51, 102, 255, 0.1);
+  --ct-tint-green: rgba(0, 133, 71, 0.1);
+  --ct-tint-orange: rgba(255, 153, 0, 0.1);
+  --ct-tint-red: rgba(255, 58, 51, 0.1);
+
+  /* ── 로고 ─────────────────────────────────────────────────── */
+  --ct-logo-key-z: rgb(20, 23, 43); /* 팀 Ctrl+Z 키캡 */
+  --ct-logo-notch: var(--ct-surface); /* 두 키캡 사이를 갈라주는 선 */
 
   /* ── 컨트롤 치수 ──────────────────────────────────────────── */
   --ct-nav-h: 64px;
-  --ct-thead-h: 40px;
-  --ct-row-h: 52px;
+  --ct-thead-h: 44px;
+  --ct-row-h: 60px; /* 52 → 60. 표가 숨 쉴 자리가 없어 빽빽해 보였습니다 */
   --ct-control-lg: 48px;
   --ct-control-md: 40px;
   --ct-control-sm: 32px;
   --ct-chip-h: 36px;
-  --ct-badge-h: 24px;
-  --ct-badge-sm-h: 22px;
+  --ct-badge-h: 26px;
+  --ct-badge-sm-h: 24px;
   --ct-avatar-sm: 32px;
   --ct-avatar-md: 56px;
   --ct-avatar-lg: 64px;
@@ -60,6 +66,31 @@
   /* --motion-fast / --motion-normal / --motion-slow / --ease-standard 는
      semantic.css 에서 이미 스펙과 같은 값(120/200/320ms)으로 정의됨 */
   --ct-motion-gate: 900ms; /* 게이트 해정만 예외 */
+
+  /* ── 부드럽게: 모서리 ─────────────────────────────────────── */
+  /* 핸드오프 스펙은 12px 카드였는데, 실제로 띄워 보니 화면 전체가 각져
+     보인다는 피드백을 받았습니다. 토큰 자체를 키워 카드·필드·배지가 한꺼번에
+     같은 비율로 부드러워지게 했습니다(개별 화면 CSS는 손대지 않습니다). */
+  --radius-6: 8px;
+  --radius-8: 10px;
+  --radius-10: 12px;
+  --radius-12: 16px;
+  --radius-14: 18px;
+  --radius-16: 20px;
+
+  /* ── 부드럽게: 경계선과 그림자 ────────────────────────────── */
+  /* 선을 흐리게 하고 그림자를 넓게 폅니다. 1px 짜리 진한 선으로 칸을 나누면
+     표가 격자처럼 읽혀서, 선은 옅게 두고 대신 그림자로 층을 만듭니다. */
+  --line-normal-alternative: rgba(112, 115, 124, 0.11);
+  --line-normal-neutral: rgba(112, 115, 124, 0.13);
+
+  --elevation-card:
+    inset 0 0 0 1px rgba(112, 115, 124, 0.08),
+    0 1px 2px 0 rgba(23, 23, 25, 0.03),
+    0 6px 16px -6px rgba(23, 23, 25, 0.08);
+  --elevation-raised:
+    0 2px 6px 0 rgba(23, 23, 25, 0.05),
+    0 10px 24px -8px rgba(23, 23, 25, 0.1);
 }
 
 /* 이 제품의 웹 화면은 라이트 전용입니다. 키오스크만 어둡고, 그건 별도

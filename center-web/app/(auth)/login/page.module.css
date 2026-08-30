@@ -20,12 +20,9 @@
   gap: 24px;
 }
 
+/* 로고 락업. 아래 제목과 한 덩어리로 읽히게 아주 살짝만 띄웁니다. */
 .brand {
-  font-size: 12px;
-  line-height: 1.334;
-  letter-spacing: 0.025em;
-  font-weight: 700;
-  color: var(--primary-normal);
+  margin-bottom: 4px;
 }
 
 .title {

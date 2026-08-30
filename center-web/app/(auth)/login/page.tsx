@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Button } from "@/components/Button";
 import { TextField } from "@/components/Field";
+import { Logo } from "@/components/Logo";
 import { useSession } from "@/lib/session";
 import styles from "./page.module.css";
 
@@ -65,7 +66,7 @@ export default function LoginPage() {
     <main className={styles.page}>
       <div className={styles.card}>
         <div className={styles.intro}>
-          <span className={styles.brand}>CENTER</span>
+          <Logo size="lg" className={styles.brand} />
           <h1 className={styles.title}>
             {isAdmin ? "안전관리자 로그인" : "안전 출입 관리"}
           </h1>

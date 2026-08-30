@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { Logo } from "@/components/Logo";
 import { useSession, useUser } from "@/lib/session";
 import { useRequests } from "@/lib/store";
 import { ROLE_LABEL, canApprove, canRequestWork, canViewMyPage } from "@/lib/types";
@@ -34,7 +35,15 @@ export function TopNav() {
     <nav className={styles.nav} aria-label="주요 메뉴">
       <div className={styles.inner}>
         <div className={styles.left}>
-          <span className={styles.logo}>CENTER</span>
+          {/* 로고는 첫 화면으로 돌아가는 문이기도 합니다 — 역할마다 갈 수 있는
+              화면이 달라, 메뉴에 남아 있는 첫 항목으로 보냅니다. */}
+          <Link
+            href={menu[0]?.href ?? "/dashboard"}
+            className={styles.logo}
+            aria-label="Center 홈"
+          >
+            <Logo size="sm" />
+          </Link>
           <ul className={styles.menu}>
             {menu.map((m) => {
               const active = pathname.startsWith(m.href);

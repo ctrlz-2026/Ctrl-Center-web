@@ -14,19 +14,28 @@
 }
 
 /* 규칙 1번대로 경계선은 border 가 아니라 inset box-shadow 입니다.
-   focus 로 2px 링이 생겨도 레이아웃이 밀리지 않습니다. */
+   focus 로 2px 링이 생겨도 레이아웃이 밀리지 않습니다.
+   흰 배경 + 진한 테두리(0.22)로는 입력칸이 각진 상자로 읽혀서, 옅게 채운
+   면에 흐린 테두리를 두르는 쪽으로 바꿨습니다. 커서를 올리거나 포커스가
+   들어오면 표면이 흰색으로 올라옵니다. */
 .control {
   box-sizing: border-box;
   width: 100%;
   border-radius: var(--radius-12);
-  box-shadow: var(--line-inset-normal);
-  background: var(--ct-surface);
+  box-shadow: inset 0 0 0 1px var(--line-normal-neutral);
+  background: var(--ct-page-bg);
   color: var(--label-normal);
   font-size: 15px;
   line-height: 1.467;
   letter-spacing: 0.01em;
   font-weight: 500;
-  transition: box-shadow var(--motion-fast) var(--ease-standard);
+  transition:
+    box-shadow var(--motion-fast) var(--ease-standard),
+    background var(--motion-fast) var(--ease-standard);
+}
+
+.control:hover:not(:disabled) {
+  background: var(--ct-surface);
 }
 
 .input {
@@ -44,6 +53,7 @@
 }
 
 .control:focus-visible {
+  background: var(--ct-surface);
   box-shadow: var(--state-focus-ring);
 }
 
