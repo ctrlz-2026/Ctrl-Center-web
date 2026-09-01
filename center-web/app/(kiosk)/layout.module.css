@@ -1,0 +1,18 @@
+/* 키오스크 공통 셸. 세로형 터치패드(1080×1920 계열)와 가로형 모두에서
+   가운데 한 줄로 읽히게 잡습니다. */
+
+.shell {
+  min-height: 100vh;
+  background: var(--ct-kiosk-surface);
+  color: var(--static-white);
+  /* 화면이 켜져 있다는 게 멀리서도 보이도록 아주 옅은 상단 광원을 둡니다. */
+  background-image: radial-gradient(
+    120% 60% at 50% 0%,
+    rgba(51, 102, 255, 0.16) 0%,
+    transparent 60%
+  );
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 24px 56px;
+}

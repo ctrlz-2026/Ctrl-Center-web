@@ -134,5 +134,9 @@ export function toRequestView(
     status: d.status as RequestStatus,
     reason: d.reason ?? undefined,
     rejectReason: d.rejectReason ?? undefined,
+    approveNote: d.approveNote ?? undefined,
+    approverName: d.approverId
+      ? (m.employees.get(String(d.approverId))?.name ?? undefined)
+      : undefined,
   };
 }

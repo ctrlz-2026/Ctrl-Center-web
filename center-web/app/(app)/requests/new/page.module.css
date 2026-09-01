@@ -99,3 +99,39 @@
     flex-direction: column;
   }
 }
+
+/* 팀장이 결재하며 남긴 말. 승인 전달사항은 파란 계열(가도 된다는 당부),
+   반려 사유는 빨간 계열(막혔다)로 나눠 한눈에 구분되게 합니다. */
+.decisionNote,
+.decisionReject {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-10);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.decisionNote {
+  background: var(--ct-tint-primary);
+  color: var(--label-normal);
+}
+
+.decisionReject {
+  background: var(--ct-tint-red);
+  color: var(--label-normal);
+}
+
+.decisionNote strong,
+.decisionReject strong {
+  display: block;
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+
+.decisionNote strong {
+  color: var(--primary-normal);
+}
+
+.decisionReject strong {
+  color: var(--red-50);
+}

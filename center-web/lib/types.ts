@@ -264,6 +264,14 @@ export interface ApprovalRequest {
   reason?: string;
   /** 팀장이 적은 반려 사유. 스펙 권장상 사유 없이는 반려할 수 없습니다. */
   rejectReason?: string;
+  /** 팀장이 **승인하면서** 남긴 한마디 (선택).
+   *
+   *  반려 사유와 따로 두는 이유: 반려 사유는 "왜 안 되는지"라 요청이 거기서
+   *  끝나지만, 이건 "가되 이건 알고 가라"는 당부라 **작업자가 현장에서 읽어야**
+   *  합니다. 그래서 키오스크 작업 카드에도 같이 내려갑니다. */
+  approveNote?: string;
+  /** 결재한 사람 이름. 누구 말인지 모르면 당부도 무게가 없습니다. */
+  approverName?: string;
 }
 
 export type SiteStatusState =

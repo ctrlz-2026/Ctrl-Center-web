@@ -51,7 +51,13 @@ interface RequestsContextValue {
   /** 내가 올린 요청 중 가장 최근 것 (W2 우측 "내 최근 요청"). */
   myLatest: ApprovalRequest | null;
   submit: (input: SubmitInput) => Promise<void>;
-  decide: (id: string, action: "approve" | "reject", reason?: string) => Promise<void>;
+  /** reason 은 반려 사유(필수), note 는 승인하며 남기는 한마디(선택). */
+  decide: (
+    id: string,
+    action: "approve" | "reject",
+    reason?: string,
+    note?: string,
+  ) => Promise<void>;
   /** 젯슨이 없는 동안 웹에서 게이트를 진행시킵니다. 기기가 붙으면 사라질 기능입니다. */
   gateControl: (
     action: "unlock" | "end",
@@ -126,11 +132,16 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
   );
 
   const decide = useCallback(
-    async (id: string, action: "approve" | "reject", reason?: string) => {
+    async (
+      id: string,
+      action: "approve" | "reject",
+      reason?: string,
+      note?: string,
+    ) => {
       const res = await fetch(`/api/requests/${id}/decision`, {
         method: "POST",
         headers: await authHeaders(),
-        body: JSON.stringify({ action, reason }),
+        body: JSON.stringify({ action, reason, note }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null;

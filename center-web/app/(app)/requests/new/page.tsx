@@ -191,6 +191,19 @@ function NewRequestPageInner() {
                   </Badge>
                 </div>
               ) : null}
+              {/* 팀장이 결재하며 남긴 말. 승인이든 반려든 작업자가 봐야 하는
+                  내용이라 상태 배지 바로 아래에 붙입니다. */}
+              {myLatest?.approveNote ? (
+                <p className={styles.decisionNote}>
+                  <strong>{myLatest.approverName ?? "팀장"}</strong>{" "}
+                  {myLatest.approveNote}
+                </p>
+              ) : null}
+              {myLatest?.rejectReason ? (
+                <p className={styles.decisionReject}>
+                  <strong>반려 사유</strong> {myLatest.rejectReason}
+                </p>
+              ) : null}
               {myLatest === null ? (
                 <span className={styles.pickedEmpty}>
                   아직 보낸 요청이 없어요.

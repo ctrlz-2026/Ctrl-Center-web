@@ -36,6 +36,16 @@ function ApprovalsPageInner() {
   const [filter, setFilter] = useState<Filter>("pending");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [approveNote, setApproveNote] = useState("");
+
+  /* 요청을 바꿔 고르면 적던 글은 비웁니다.
+     안 비우면 A 요청에 적은 반려 사유가 B 요청 화면에 그대로 남아 있다가
+     그대로 제출됩니다 — 남의 요청에 엉뚱한 사유가 붙는 사고가 됩니다. */
+  function select(id: string | null) {
+    setSelectedId(id);
+    setRejectReason("");
+    setApproveNote("");
+  }
 
   const rows = useMemo(
     () =>
@@ -50,8 +60,15 @@ function ApprovalsPageInner() {
     requests.find((r) => r.id === selectedId && rows.includes(r)) ?? null;
 
   async function handleApprove(request: ApprovalRequest) {
-    await decide(request.id, "approve");
-    show(`${request.code} ${request.title} 승인했어요.`);
+    const note = approveNote.trim();
+    await decide(request.id, "approve", undefined, note || undefined);
+    setRejectReason("");
+    setApproveNote("");
+    show(
+      note
+        ? `${request.code} ${request.title} 승인 + 전달사항을 보냈어요.`
+        : `${request.code} ${request.title} 승인했어요.`,
+    );
   }
 
   async function handleReject(request: ApprovalRequest) {
@@ -59,6 +76,7 @@ function ApprovalsPageInner() {
     if (!rejectReason.trim()) return;
     await decide(request.id, "reject", rejectReason);
     setRejectReason("");
+    setApproveNote("");
     show(`${request.code} ${request.title} 반려했어요.`);
   }
 
@@ -108,7 +126,7 @@ function ApprovalsPageInner() {
               size="small"
               variant="outlined"
               color="assistive"
-              onClick={() => setSelectedId(r.id)}
+              onClick={() => select(r.id)}
             >
               반려
             </Button>
@@ -152,7 +170,7 @@ function ApprovalsPageInner() {
               columns={columns}
               rows={rows}
               rowKey={(r) => r.id}
-              onRowClick={(r) => setSelectedId(r.id)}
+              onRowClick={(r) => select(r.id)}
               isSelected={(r) => r.id === selectedId}
               isMuted={(r) => r.status !== "pending"}
               emptyText={
@@ -209,9 +227,18 @@ function ApprovalsPageInner() {
                         승인&rdquo;으로 남습니다.
                       </p>
                     ) : null}
+                    {/* 승인하며 남기는 당부. 작업자의 키오스크 카드에 그대로
+                        뜨므로, 현장에서 읽힐 말만 적게 안내합니다. */}
+                    <TextArea
+                      label="전달사항 (선택)"
+                      height={72}
+                      value={approveNote}
+                      onChange={(e) => setApproveNote(e.target.value)}
+                      placeholder="승인하며 전할 말이 있으면 적어주세요 — 키오스크에 그대로 떠요"
+                    />
                     <TextArea
                       label="반려 사유"
-                      height={80}
+                      height={72}
                       value={rejectReason}
                       onChange={(e) => setRejectReason(e.target.value)}
                       placeholder="반려하려면 사유를 적어주세요"
@@ -231,11 +258,23 @@ function ApprovalsPageInner() {
                     </div>
                   </>
                 ) : (
-                  <InfoRow label="처리 결과">
-                    <Badge tone={REQUEST_STATUS_TONE[selected.status]}>
-                      {REQUEST_STATUS_LABEL[selected.status]}
-                    </Badge>
-                  </InfoRow>
+                  <>
+                    <InfoRow label="처리 결과">
+                      <Badge tone={REQUEST_STATUS_TONE[selected.status]}>
+                        {REQUEST_STATUS_LABEL[selected.status]}
+                      </Badge>
+                    </InfoRow>
+                    {selected.approveNote ? (
+                      <InfoRow
+                        label={`${selected.approverName ?? "팀장"} 전달사항`}
+                      >
+                        {selected.approveNote}
+                      </InfoRow>
+                    ) : null}
+                    {selected.rejectReason ? (
+                      <InfoRow label="반려 사유">{selected.rejectReason}</InfoRow>
+                    ) : null}
+                  </>
                 )}
               </>
             ) : (

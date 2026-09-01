@@ -1,0 +1,303 @@
+/* 키오스크 공용 스타일. 세 화면(게이트 선택 · 작업 선택 · 작업 확인)이
+   같은 리듬을 쓰도록 한 파일에 모읍니다. */
+
+.wrap {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ── 머리말 ─────────────────────────────────────────────────── */
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.eyebrow {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--primary-normal-2, #5b84ff);
+}
+
+.title {
+  font-size: 40px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.sub {
+  font-size: 18px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* ── 큰 터치 카드 ───────────────────────────────────────────── */
+/* 장갑 낀 손을 전제로 최소 높이를 크게 잡습니다. 목록이 길어져도 한 화면에
+   억지로 욱여넣지 않고 스크롤합니다 — 눌러야 할 것이 작아지는 게 더 나쁩니다. */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-height: 112px;
+  padding: 20px 24px;
+  border-radius: var(--radius-16);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    background var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.card:active {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 2px var(--primary-normal);
+}
+
+.code {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border-radius: var(--radius-14);
+  background: var(--primary-normal);
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.cardBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cardTitle {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.cardMeta {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.chev {
+  flex: none;
+  font-size: 28px;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+/* ── 빈 상태 ────────────────────────────────────────────────── */
+/* 승인된 작업이 없을 때. 고장이 아니라 "아직 결재가 안 났다"는 걸 분명히 합니다. */
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 56px 32px;
+  border-radius: var(--radius-16);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+
+.emptyTitle {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.emptyBody {
+  font-size: 17px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+/* ── 상세(작업 확인) ────────────────────────────────────────── */
+.panel {
+  padding: 28px;
+  border-radius: var(--radius-16);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 19px;
+}
+
+.rowLabel {
+  flex: none;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.rowValue {
+  text-align: right;
+  font-weight: 600;
+}
+
+.ppeList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.ppe {
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* 팀장 전달사항. 현장에서 읽으라고 쓴 말이라 가장 눈에 띄게 둡니다. */
+.note {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  border-radius: var(--radius-14);
+  background: rgba(51, 102, 255, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(91, 132, 255, 0.45);
+}
+
+.noteLabel {
+  font-size: 15px;
+  font-weight: 700;
+  color: #a9c0ff;
+}
+
+.noteBody {
+  font-size: 19px;
+  line-height: 1.5;
+}
+
+/* ── 다음 단계 자리 ─────────────────────────────────────────── */
+/* 사원증 태그 → 얼굴인식 → PPE 판정은 젯슨이 합니다. 여기는 그 화면이 들어올
+   자리이고, 지금은 무엇이 올지 적어만 둡니다. */
+.next {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 44px 28px;
+  border-radius: var(--radius-16);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.12);
+  text-align: center;
+}
+
+.nextIcon {
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: rgba(51, 102, 255, 0.2);
+}
+
+.nextTitle {
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.nextBody {
+  font-size: 17px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.58);
+  max-width: 420px;
+}
+
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.step {
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.66);
+}
+
+/* ── 뒤로 ───────────────────────────────────────────────────── */
+.actions {
+  display: flex;
+  gap: 14px;
+}
+
+.back {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  min-height: 72px;
+  border-radius: var(--radius-14);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  text-decoration: none;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.back:active {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+@media (max-width: 599px) {
+  .title {
+    font-size: 30px;
+  }
+
+  .card {
+    gap: 14px;
+    padding: 16px 18px;
+  }
+
+  .code {
+    width: 56px;
+    height: 56px;
+    font-size: 26px;
+  }
+
+  .cardTitle {
+    font-size: 20px;
+  }
+
+  .row {
+    flex-direction: column;
+    gap: 6px;
+    font-size: 17px;
+  }
+
+  .rowValue,
+  .ppeList {
+    text-align: left;
+    justify-content: flex-start;
+  }
+}

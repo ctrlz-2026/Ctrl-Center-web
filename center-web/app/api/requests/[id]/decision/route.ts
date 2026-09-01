@@ -22,7 +22,7 @@ export async function POST(
     );
   }
 
-  let body: { action?: "approve" | "reject"; reason?: string };
+  let body: { action?: "approve" | "reject"; reason?: string; note?: string };
   try {
     body = await request.json();
   } catch {
@@ -72,12 +72,17 @@ export async function POST(
    * 셀프 승인이었다는 뜻이고, 사후에 추적할 수 있어야 합니다.
    * 승인자가 여러 명인 조직으로 바뀌면 이 허용을 되돌릴 수 있습니다. */
 
+  /* 승인하면서 남기는 한마디는 **선택**입니다. 반려 사유처럼 강제하면
+     대충 채운 글자가 쌓여서 정작 중요한 당부가 묻힙니다. */
+  const note = body.note?.trim() ?? "";
+
   const patch = {
     status: body.action === "approve" ? "approved" : "rejected",
     approverId: caller.empNo,
     selfApproved: String(current.requesterId) === caller.empNo,
     decidedAt: new Date().toISOString(),
     rejectReason: body.action === "reject" ? reason : null,
+    approveNote: body.action === "approve" && note ? note : null,
   };
   await ref.update(patch);
 
