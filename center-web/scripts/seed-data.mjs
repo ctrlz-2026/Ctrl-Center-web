@@ -26,7 +26,7 @@ export const qualifications = [
   { code: "high_place", name: "고소작업 안전교육" },
   { code: "electric", name: "전기작업 유자격" },
   { code: "confined", name: "밀폐공간 작업 특별교육" },
-  // G-2 는 표에 "관련 안전교육 이수"로만 적혀 있습니다. 도장부스는 유기용제를
+  // G 는 표(G-2)에 "관련 안전교육 이수"로만 적혀 있습니다. 도장부스는 유기용제를
   // 다루므로 기존 chemical 을 이 이름으로 쓰되, 정식 명칭은 확인이 필요합니다.
   { code: "chemical", name: "도장작업 안전교육" },
   { code: "crane", name: "크레인 점검작업 안전교육" },
@@ -50,39 +50,46 @@ export const gates = sites.map((s) => ({
 }));
 
 /* ─── 작업코드 ───────────────────────────────────────────────────────────────
- * 「작업 기준 설계」(팀장, 2026-09-01) 표를 그대로 옮긴 것입니다.
- * 코드·작업명·최소인원·자격·PPE·예상시간 전부 그 표가 기준이고, 여기서
- * 임의로 바꾸지 않습니다. 표가 바뀌면 여기도 같이 바꿔야 합니다.
+ * 내용(작업명·최소인원·자격·PPE·예상시간)은 「작업 기준 설계」(팀장, 2026-09-01)
+ * 표가 기준입니다. 여기서 임의로 바꾸지 않습니다.
  *
- * (한때 뒤 숫자를 떼고 A·B·C 로 줄였었는데, 표가 A-3 형식이라 되돌렸습니다.) */
+ * **다만 코드 표기만 팀 표와 다릅니다.** 표는 `A-3`·`B-7` 인데 우리는 글자
+ * 하나만 씁니다 — 뒤 숫자가 인원·시간·위험도 어느 것과도 무관한 임의값이라
+ * 읽는 사람이 의미를 찾다가 헷갈리기 때문입니다(팀 결정, 2026-09-01).
+ *
+ * 표와 대조할 수 있게 대응을 남겨둡니다. 표가 바뀌면 이 줄부터 확인하세요.
+ *   A ← A-3   B ← B-7   C ← C-1   D ← D-2   E ← E-4
+ *   F ← F-1   G ← G-2   H ← H-5   J ← J-8
+ *
+ * I 는 건너뜁니다. 표에서 홀로 놓이면 숫자 1 이나 소문자 l 로 읽힙니다. */
 export const workCodes = [
-  { code: "A-3", name: "사다리 고소 점검", requiredHeadcount: 2,
+  { code: "A", name: "사다리 고소 점검", requiredHeadcount: 2,
     requiredPpe: ["helmet", "lanyard"], requiredQualifications: ["high_place"],
     estimatedMinutes: 45, active: true },
-  { code: "B-7", name: "천장 조명기구 교체", requiredHeadcount: 2,
+  { code: "B", name: "천장 조명기구 교체", requiredHeadcount: 2,
     requiredPpe: ["helmet", "shoes"], requiredQualifications: ["electric"],
     estimatedMinutes: 30, active: true },
-  { code: "C-1", name: "배관 밸브 교체", requiredHeadcount: 2,
+  { code: "C", name: "배관 밸브 교체", requiredHeadcount: 2,
     requiredPpe: ["helmet", "shoes", "gloves", "goggles"], requiredQualifications: [],
     estimatedMinutes: 75, active: true },
-  { code: "D-2", name: "컨베이어 벨트 점검", requiredHeadcount: 2,
+  { code: "D", name: "컨베이어 벨트 점검", requiredHeadcount: 2,
     requiredPpe: ["helmet", "shoes"], requiredQualifications: [],
     estimatedMinutes: 60, active: true },
-  { code: "E-4", name: "밀폐공간 설비 정비", requiredHeadcount: 3,
+  { code: "E", name: "밀폐공간 설비 정비", requiredHeadcount: 3,
     requiredPpe: ["helmet", "shoes", "lanyard"], requiredQualifications: ["confined"],
     estimatedMinutes: 90, active: true },
-  { code: "F-1", name: "폐수처리장 펌프 점검", requiredHeadcount: 2,
+  { code: "F", name: "폐수처리장 펌프 점검", requiredHeadcount: 2,
     requiredPpe: ["helmet", "shoes", "gloves", "goggles"], requiredQualifications: [],
     estimatedMinutes: 50, active: true },
-  // 표에 안전모가 없습니다. 도장부스는 머리 위 낙하물이 없다는 판단으로 보이는데,
+  // 표(G-2)에 안전모가 없습니다. 도장부스는 머리 위 낙하물이 없다는 판단으로 보이는데,
   // 다른 작업과 달라 눈에 띄는 부분이라 팀장 확인이 필요합니다.
-  { code: "G-2", name: "도장부스 필터 교체", requiredHeadcount: 2,
+  { code: "G", name: "도장부스 필터 교체", requiredHeadcount: 2,
     requiredPpe: ["gasmask", "gloves", "goggles"], requiredQualifications: ["chemical"],
     estimatedMinutes: 40, active: true },
-  { code: "H-5", name: "공조기 구동벨트 교체", requiredHeadcount: 2,
+  { code: "H", name: "공조기 구동벨트 교체", requiredHeadcount: 2,
     requiredPpe: ["helmet", "shoes", "gloves"], requiredQualifications: [],
     estimatedMinutes: 35, active: true },
-  { code: "J-8", name: "천장크레인 와이어로프 점검", requiredHeadcount: 2,
+  { code: "J", name: "천장크레인 와이어로프 점검", requiredHeadcount: 2,
     requiredPpe: ["helmet", "shoes", "gloves", "lanyard"],
     requiredQualifications: ["crane"],
     estimatedMinutes: 70, active: true },
