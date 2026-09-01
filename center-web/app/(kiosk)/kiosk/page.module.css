@@ -36,9 +36,86 @@
   color: rgba(255, 255, 255, 0.62);
 }
 
-/* ── 큰 터치 카드 ───────────────────────────────────────────── */
-/* 장갑 낀 손을 전제로 최소 높이를 크게 잡습니다. 목록이 길어져도 한 화면에
-   억지로 욱여넣지 않고 스크롤합니다 — 눌러야 할 것이 작아지는 게 더 나쁩니다. */
+/* ── 작업 타일 (격자) ───────────────────────────────────────── */
+/* 작업 선택은 이 기기의 본 화면이라 **큰 정사각형 타일을 격자로** 깝니다.
+   가로 스크롤을 안 쓰는 이유: 벽에 붙은 터치패드에는 스크롤바가 안 보여서
+   화면 밖 오른쪽에 있는 작업은 없는 것이 됩니다. 격자는 넘치면 아래로
+   흐르고, 잘린 타일이 "더 있다"를 스스로 알려줍니다. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.tile {
+  /* 정사각형에 가깝게. 내용이 길어지면 세로로만 늘어납니다. */
+  aspect-ratio: 1 / 1;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+  border-radius: var(--radius-16);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    background var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.tile:active {
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 0 0 2px var(--primary-normal);
+}
+
+/* 코드 글자는 멀리서도 읽히게 크게. 작업자는 자기 작업의 글자를 먼저 찾습니다. */
+.tileCode {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border-radius: var(--radius-16);
+  background: var(--primary-normal);
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.tileTitle {
+  flex: 1;
+  min-height: 0;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+.tileMeta {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* 팀장 전달사항이 붙은 작업은 타일에서부터 표시합니다 — 들어가서야 알면
+   이미 늦습니다. */
+.tileFlag {
+  align-self: flex-start;
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  background: rgba(51, 102, 255, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(143, 176, 255, 0.5);
+  font-size: 14px;
+  font-weight: 700;
+  color: #c3d4ff;
+}
+
+/* ── 큰 터치 카드 (게이트 선택처럼 줄글이 긴 목록) ──────────── */
 .list {
   display: flex;
   flex-direction: column;
@@ -272,6 +349,30 @@
 @media (max-width: 599px) {
   .title {
     font-size: 30px;
+  }
+
+  /* 좁은 화면에서는 한 줄에 하나. 정사각형을 고집하면 타일이 화면을 다
+     잡아먹어서, 여기서는 비율을 풀고 높이만 확보합니다. */
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .tile {
+    aspect-ratio: auto;
+    min-height: 0;
+    padding: 20px;
+  }
+
+  .tileCode {
+    width: 60px;
+    height: 60px;
+    font-size: 30px;
+  }
+
+  .tileTitle {
+    flex: none;
+    font-size: 22px;
   }
 
   .card {

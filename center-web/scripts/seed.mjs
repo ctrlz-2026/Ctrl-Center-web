@@ -47,26 +47,26 @@ const at = (minutesAgo) => new Date(now - minutesAgo * 60_000).toISOString();
  * 본인이 올린 요청은 본인이 승인할 수 없기 때문입니다. */
 const approvalRequests = [
   {
-    id: "req-seed-1", requesterId: TEAM.jeong, workCode: "A", siteId: "site-b2",
+    id: "req-seed-1", requesterId: TEAM.jeong, workCode: "A-3", siteId: "site-b2",
     scheduledAt: at(-60),
     reason: "정기 점검 주기 도래로 사다리 상단 고정부 확인이 필요합니다",
     status: "pending", approverId: null, decidedAt: null, rejectReason: null,
     createdAt: at(28),
   },
   {
-    id: "req-seed-2", requesterId: TEAM.park, workCode: "E", siteId: "site-c0",
+    id: "req-seed-2", requesterId: TEAM.park, workCode: "E-4", siteId: "site-c0",
     scheduledAt: at(-120), reason: null,
     status: "pending", approverId: null, decidedAt: null, rejectReason: null,
     createdAt: at(46),
   },
   {
-    id: "req-seed-3", requesterId: "2017-0264", workCode: "J", siteId: "site-b2",
+    id: "req-seed-3", requesterId: "2017-0264", workCode: "J-8", siteId: "site-b2",
     scheduledAt: at(-180), reason: "천장크레인 와이어 정기 점검",
     status: "pending", approverId: null, decidedAt: null, rejectReason: null,
     createdAt: at(74),
   },
   {
-    id: "req-seed-4", requesterId: "2022-0703", workCode: "B", siteId: "site-d5",
+    id: "req-seed-4", requesterId: "2022-0703", workCode: "B-7", siteId: "site-d5",
     scheduledAt: at(-45), reason: null,
     status: "pending", approverId: null, decidedAt: null, rejectReason: null,
     createdAt: at(12),

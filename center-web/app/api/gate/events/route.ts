@@ -108,7 +108,7 @@ export async function POST(request: Request) {
   const response: GateStateResponse = {
     session_id: "not-implemented",
     state: "tagging",
-    headcount: { tagged: 0, entered: 0, required: 0 },
+    headcount: { required: 0, tagged: 0, verified: 0, entered: 0 },
     unlock: false,
     message: "서버 준비 중이에요.",
     accepted,

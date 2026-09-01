@@ -53,6 +53,21 @@ export interface EntryExitPayload {
   emp_no: string;
 }
 
+/** 입장이 막힌 이유 (「출입 및 인원관리 로직」 §14 "입장 차단").
+ *
+ *  판정은 서버가 하고 젯슨은 응답의 `message` 를 띄우기만 합니다. 그래도
+ *  코드를 같이 내려주는 이유는, 기기가 사유별로 다른 소리·색을 낼 수 있게
+ *  하기 위해서입니다. */
+export type EntryBlockReason =
+  | "card_unknown" // 등록되지 않은 카드
+  | "card_revoked" // 폐기된 카드
+  | "employee_inactive" // 비활성화된 직원
+  | "not_assigned" // 이 작업에 참여할 수 없는 직원
+  | "already_in_other_work" // 다른 작업에 이미 IN 상태 (§9)
+  | "qualification" // 자격·교육 미충족
+  | "face" // 얼굴인식 실패
+  | "ppe"; // PPE 미착용
+
 export type GateEventPayload =
   | CardTagPayload
   | FaceMatchPayload
@@ -94,13 +109,42 @@ export interface GateStateResponse {
     | "unlocking"
     | "working"
     | "closed";
-  headcount: { tagged: number; entered: number; required: number };
+  /** 인원은 **네 가지를 따로** 셉니다 (「출입 및 인원관리 로직」 §6).
+   *
+   *  하나로 합치면 "3명 찍혔는데 왜 문이 안 열리지"를 설명할 수 없습니다.
+   *  태그한 사람과 검증을 통과한 사람과 안에 있는 사람은 다 다른 수입니다.
+   *
+   *  - `required` 작업에 필요한 최소 인원 (작업코드에서 옴)
+   *  - `tagged`   NFC 를 찍은 **서로 다른** 작업자 수. 같은 사람이 세 번 찍어도 1
+   *  - `verified` 자격·얼굴·PPE 를 **모두** 통과한 작업자 수
+   *  - `entered`  지금 실제로 안에 있는 사람 수 (입장 후 퇴장하면 줄어듦)
+   *
+   *  문을 여는 기준은 `tagged` 가 아니라 **`verified >= required`** 입니다 (§7). */
+  headcount: {
+    required: number;
+    tagged: number;
+    verified: number;
+    entered: number;
+  };
   last_verification?: {
     emp_no: string;
     passed: boolean;
     failed_items: string[];
     attempt: number;
+    /** 통과하지 못했다면 무엇 때문인지. 기기가 사유별로 다르게 안내할 수 있습니다. */
+    block_reason?: EntryBlockReason;
   };
+  /** 방금 태그가 **퇴장**으로 처리됐는지 (§4).
+   *
+   *  같은 NFC 태그가 상태에 따라 입장도 되고 퇴장도 되므로, 기기가 "들어갑니다"와
+   *  "나갑니다" 중 무엇을 띄울지 알아야 합니다. 퇴장은 얼굴·PPE 를 다시 보지
+   *  않고 기록만 남깁니다. */
+  last_exit?: { emp_no: string };
+  /** 작업 시작 후 현재 인원이 최소인원 아래로 떨어졌는지 (§11).
+   *
+   *  **이 값이 true 여도 서버는 작업을 끝내지 않습니다.** 경고만 올리고,
+   *  현장을 확인하는 건 팀장·관리자 몫이라고 문서가 못박고 있습니다. */
+  understaffed?: boolean;
   /** 문을 열어도 되는지. 젯슨은 이 값만 보고 해정 애니메이션을 재생합니다. */
   unlock: boolean;
   /** 화면에 띄울 문구. 젯슨에 하드코딩하지 않기 위해 서버가 내려줍니다. */

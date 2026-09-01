@@ -44,24 +44,26 @@ export default async function KioskTaskListPage({
           </p>
         </div>
       ) : (
-        <div className={styles.list}>
+        <div className={styles.grid}>
           {tasks.map((t) => (
             <Link
               key={t.requestId}
               href={`/kiosk/${gateId}/${t.requestId}`}
-              className={styles.card}
+              className={styles.tile}
             >
-              <span className={styles.code}>{t.code}</span>
-              <span className={styles.cardBody}>
-                <span className={styles.cardTitle}>{t.title}</span>
-                <span className={styles.cardMeta}>
+              <span className={styles.tileCode}>{t.code}</span>
+              <span className={styles.tileTitle}>{t.title}</span>
+              {/* 전달사항이 있다는 사실은 타일에서부터 알립니다 —
+                  들어가서야 알면 이미 문 앞입니다. */}
+              {t.approveNote ? (
+                <span className={styles.tileFlag}>전달사항 있음</span>
+              ) : null}
+              <span className={styles.tileMeta}>
+                <span>
                   {t.requesterName} {t.requesterRank} ·{" "}
                   {formatHeadcount(t.headcount)}
-                  {t.scheduledAt ? ` · ${t.scheduledAt} 예정` : ""}
                 </span>
-              </span>
-              <span className={styles.chev} aria-hidden="true">
-                →
+                {t.scheduledAt ? <span>{t.scheduledAt} 예정</span> : null}
               </span>
             </Link>
           ))}

@@ -242,6 +242,21 @@ export async function loadDashboard(): Promise<DashboardData> {
       continue;
     }
 
+    /* 작업 중 인원이 최소기준 아래로 떨어진 경우 (「출입 및 인원관리 로직」 §11).
+       한 명이 퇴장해 2명 작업이 1명이 되면 경고를 올립니다.
+       **작업을 끝내지는 않습니다** — 문서가 "시스템이 자동 종료하지 않는다"고
+       못박았고, 현장을 확인하는 건 팀장 몫입니다. */
+    const required = Number(wc?.requiredHeadcount ?? 0);
+    const inside = s.enteredCount ?? 0;
+    if (s.state === "working" && required > 0 && inside < required) {
+      anomalies.push({
+        id: `understaffed-${s.id}`,
+        kind: "warning",
+        title: "작업 중 인원 미달",
+        detail: `${siteName} · ${s.workCode} ${wc?.name ?? ""}에 지금 ${inside}명뿐이에요 (최소 ${required}명). 현장을 확인해 주세요.`,
+      });
+    }
+
     const minutes = Math.floor((now - new Date(s.startedAt).getTime()) / 60_000);
     const estimated = Number(wc?.estimatedMinutes ?? 0);
     if (s.state === "working" && estimated > 0 && minutes > estimated) {
