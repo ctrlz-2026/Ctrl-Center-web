@@ -42,33 +42,38 @@ export const gates = sites.map((s) => ({
   name: `${s.name} 게이트`,
 }));
 
-// ─── 작업코드 ───────────────────────────────────────────────────────────────
+/* ─── 작업코드 ───────────────────────────────────────────────────────────────
+ * 코드는 **글자 하나**입니다. 원래 `A-3`, `B-7` 처럼 뒤에 숫자가 붙어 있었는데
+ * 그 숫자에 규칙이 없었습니다 — 인원·소요시간·위험도 어느 것과도 무관한
+ * 임의값이라, 읽는 사람은 의미를 찾다가 헷갈리기만 했습니다. 그래서 뗐습니다.
+ *
+ * I 는 건너뜁니다. 표에서 홀로 놓이면 숫자 1 이나 소문자 l 로 읽힙니다. */
 export const workCodes = [
-  { code: "A-3", name: "사다리 고소 점검", requiredHeadcount: 2,
+  { code: "A", name: "사다리 고소 점검", requiredHeadcount: 2,
     requiredPpe: ["helmet", "shoes", "harness"], requiredQualifications: ["high_place"],
     estimatedMinutes: 45, active: true },
-  { code: "B-7", name: "조명 교체", requiredHeadcount: 1,
+  { code: "B", name: "조명 교체", requiredHeadcount: 1,
     requiredPpe: ["helmet"], requiredQualifications: [],
     estimatedMinutes: 25, active: true },
-  { code: "C-1", name: "배관 밸브 교체", requiredHeadcount: 2,
+  { code: "C", name: "배관 밸브 교체", requiredHeadcount: 2,
     requiredPpe: ["helmet", "shoes", "gloves"], requiredQualifications: [],
     estimatedMinutes: 75, active: true },
-  { code: "D-2", name: "컨베이어 벨트 점검", requiredHeadcount: 2,
+  { code: "D", name: "컨베이어 벨트 점검", requiredHeadcount: 2,
     requiredPpe: ["helmet", "shoes"], requiredQualifications: [],
     estimatedMinutes: 60, active: true },
-  { code: "E-4", name: "밀폐공간 정비", requiredHeadcount: 3,
+  { code: "E", name: "밀폐공간 정비", requiredHeadcount: 3,
     requiredPpe: ["helmet", "gasmask", "lanyard"], requiredQualifications: ["confined"],
     estimatedMinutes: 90, active: true },
-  { code: "F-1", name: "폐수 펌프 점검", requiredHeadcount: 2,
+  { code: "F", name: "폐수 펌프 점검", requiredHeadcount: 2,
     requiredPpe: ["helmet", "gloves", "goggles"], requiredQualifications: ["chemical"],
     estimatedMinutes: 50, active: true },
-  { code: "G-2", name: "도장부스 필터 교체", requiredHeadcount: 2,
+  { code: "G", name: "도장부스 필터 교체", requiredHeadcount: 2,
     requiredPpe: ["helmet", "gasmask", "gloves"], requiredQualifications: ["chemical"],
     estimatedMinutes: 40, active: true },
-  { code: "H-5", name: "공조기 벨트 교체", requiredHeadcount: 2,
+  { code: "H", name: "공조기 벨트 교체", requiredHeadcount: 2,
     requiredPpe: ["helmet", "gloves"], requiredQualifications: [],
     estimatedMinutes: 35, active: true },
-  { code: "J-8", name: "천장크레인 와이어 점검", requiredHeadcount: 2,
+  { code: "J", name: "천장크레인 와이어 점검", requiredHeadcount: 2,
     requiredPpe: ["helmet", "harness", "gloves"], requiredQualifications: ["crane", "high_place"],
     estimatedMinutes: 70, active: true },
 ];

@@ -27,6 +27,13 @@ const hhmm = new Intl.DateTimeFormat("ko-KR", {
 
 const LIVE_STATES = ["tagging", "face", "verifying", "unlocking", "working"];
 
+/** 예상시간을 이만큼 넘기면 "종료를 안 누른 것"으로 보고 서버가 닫습니다.
+ *
+ *  예상 45분짜리가 5시간째 진행중으로 떠 있으면 그건 작업이 길어진 게 아니라
+ *  끝내고 나가면서 업무 종료를 안 누른 것입니다. 그대로 두면 진행중 작업 수와
+ *  입장 인원이 계속 부풀어 관제 화면 전체를 못 믿게 됩니다. */
+const AUTO_CLOSE_AFTER_OVERTIME_MINUTES = 180;
+
 /** 게이트 세션 상태 → 화면 상태.
  *  키오스크는 단계가 더 잘게 나뉘지만 관제에서는 세 덩어리면 충분합니다. */
 function toViewState(state: string): SiteStatus["state"] {
@@ -85,7 +92,49 @@ export async function loadDashboard(): Promise<DashboardData> {
     durationMinutes?: number;
     scheduledAt?: string | null;
     approvalRequestId?: string | null;
+    autoClosed?: boolean;
+    verification?: string;
   });
+
+  /* ── 방치된 세션 자동 종료 ──────────────────────────────────────────────
+   * 예상시간을 3시간 넘긴 진행중 세션은 여기서 닫습니다.
+   *
+   * 끝난 시각을 "지금"으로 적지 않고 **시작 + 예상시간**으로 적습니다.
+   * 지금으로 적으면 5시간 일한 것으로 기록이 남는데, 실제로 그만큼 일했는지는
+   * 아무도 모릅니다. 추정값이라는 걸 autoClosed 로 같이 남겨서, 나중에 이
+   * 기록을 보는 사람이 측정값과 헷갈리지 않게 합니다. */
+  const autoClosedNow: typeof sessions = [];
+  for (const s of sessions) {
+    if (s.state !== "working") continue;
+    const estimated = Number(
+      masters.workCodes.get(s.workCode)?.estimatedMinutes ?? 0,
+    );
+    if (estimated <= 0) continue;
+    const minutes = Math.floor((now - new Date(s.startedAt).getTime()) / 60_000);
+    if (minutes - estimated < AUTO_CLOSE_AFTER_OVERTIME_MINUTES) continue;
+
+    s.state = "closed";
+    s.endedAt = new Date(
+      new Date(s.startedAt).getTime() + estimated * 60_000,
+    ).toISOString();
+    s.durationMinutes = estimated;
+    s.autoClosed = true;
+    s.verification = "종료 처리 안 됨 — 서버가 자동 종료";
+    autoClosedNow.push(s);
+  }
+  if (autoClosedNow.length > 0) {
+    const batch = db.batch();
+    for (const s of autoClosedNow) {
+      batch.update(db.collection("gateSessions").doc(s.id), {
+        state: "closed",
+        endedAt: s.endedAt,
+        durationMinutes: s.durationMinutes,
+        autoClosed: true,
+        verification: s.verification,
+      });
+    }
+    await batch.commit();
+  }
 
   const live = sessions.filter((s) => s.state !== "closed");
   const closed = sessions.filter((s) => s.state === "closed");
@@ -160,6 +209,22 @@ export async function loadDashboard(): Promise<DashboardData> {
   // ── 이상 상황 ────────────────────────────────────────────────────────────
   const anomalies: Anomaly[] = [];
 
+  /* 자동 종료된 세션은 이미 closed 라 아래 live 순회에 안 걸립니다.
+     하지만 "누가 종료를 안 눌렀다"는 건 사람이 봐야 하는 사실이라 따로 올립니다. */
+  for (const s of autoClosedNow) {
+    const wc = masters.workCodes.get(s.workCode);
+    const siteName = masters.sites.get(s.siteId) ?? s.siteId;
+    const who = s.members
+      .map((m) => masters.employees.get(m)?.name ?? m)
+      .join(", ");
+    anomalies.push({
+      id: `autoclosed-${s.id}`,
+      kind: "warning",
+      title: "자동 종료됨",
+      detail: `${siteName} · ${s.workCode} ${wc?.name ?? ""}이 예상시간을 3시간 넘겨 서버가 종료했어요. ${who} 님이 업무 종료를 누르지 않은 것으로 보입니다.`,
+    });
+  }
+
   for (const s of live) {
     const wc = masters.workCodes.get(s.workCode);
     const siteName = masters.sites.get(s.siteId) ?? s.siteId;
@@ -192,9 +257,14 @@ export async function loadDashboard(): Promise<DashboardData> {
   // ── KPI ──────────────────────────────────────────────────────────────────
   const working = live.filter((s) => s.state === "working");
   const entered = live.reduce((sum, s) => sum + (s.enteredCount ?? 0), 0);
-  const firstTryPass = closed.filter((s) => s.passedFirstTry).length;
+  /* 자동 종료된 세션은 통과율에서 뺍니다. 검증을 통과한 것도 실패한 것도
+     아니라 **판정 자체가 없는** 세션이라, 분모에 넣으면 실패로 깎입니다. */
+  const verified = closed.filter((s) => !s.autoClosed);
+  const firstTryPass = verified.filter((s) => s.passedFirstTry).length;
   const passRate =
-    closed.length > 0 ? Math.round((firstTryPass / closed.length) * 100) : 0;
+    verified.length > 0
+      ? Math.round((firstTryPass / verified.length) * 100)
+      : 0;
 
   const kpis = [
     {
