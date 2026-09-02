@@ -82,11 +82,16 @@ async function seedCollection(name, docs, idKey) {
   console.log(`  ${name.padEnd(18)} ${docs.length}건`);
 }
 
+/* 시연용 문서(scripts/seed-demo.mjs)는 정리 대상에서 뺍니다. 여기서 지우면
+   seed 를 돌릴 때마다 A동 1층 라인2 시연 데이터가 날아가 매번 다시 심어야
+   합니다. 지우는 건 seed-demo.mjs --clear 로 합니다. */
+const isDemoDoc = (id) => id.startsWith("demo-") || id.startsWith("req-demo-");
+
 /** 시드에 없는 문서를 지웁니다.
  *  사람이 바뀌었는데 옛 문서가 남으면 관제 화면에 유령이 뜹니다. */
 async function pruneCollection(name, keepIds) {
   const snap = await db.collection(name).get();
-  const stale = snap.docs.filter((d) => !keepIds.has(d.id));
+  const stale = snap.docs.filter((d) => !keepIds.has(d.id) && !isDemoDoc(d.id));
   if (stale.length === 0) return;
   const batch = db.batch();
   for (const d of stale) batch.delete(d.ref);

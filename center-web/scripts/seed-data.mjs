@@ -205,6 +205,46 @@ export const employees = [
     role: "worker", hiredOn: "2021-06-19", completedCount: 173, active: true,
     qualifications: [{ code: "electric", expiresOn: "2027-02-28" }],
   },
+
+  /* ── A동 1층 라인2 시연용 인원 ────────────────────────────────────────────
+   * scripts/seed-demo.mjs 가 쓰는 사람들입니다. 위 인물들은 이미 다른 작업장의
+   * 세션에 배정돼 있어서, 그대로 A동에 또 넣으면 **한 사람이 두 작업장에서
+   * 동시에 작업 중**으로 보입니다. 「출입 및 인원관리 로직」 §9 가 금지하는
+   * 상태(already_in_other_work)라, 시연 화면이 스스로 규칙을 어기게 됩니다. */
+  {
+    empNo: "2016-0208", name: "서동현", team: "생산1팀", rank: "주임",
+    role: "worker", hiredOn: "2016-02-08", completedCount: 612, active: true,
+    // 전기 자격이 만료된 상태로 둡니다 — 차단 시연에 씁니다.
+    qualifications: [{ code: "electric", expiresOn: "2026-07-31" }],
+  },
+  {
+    empNo: "2020-0345", name: "임하늘", team: "생산1팀", rank: "사원",
+    role: "worker", hiredOn: "2020-03-16", completedCount: 204, active: true,
+    qualifications: [],
+  },
+  {
+    empNo: "2015-0177", name: "노경수", team: "설비보전팀", rank: "차장",
+    role: "worker", hiredOn: "2015-01-27", completedCount: 891, active: true,
+    qualifications: [
+      { code: "electric", expiresOn: "2027-12-19" },
+      { code: "high_place", expiresOn: "2027-06-30" },
+    ],
+  },
+  {
+    empNo: "2021-0882", name: "배시우", team: "설비보전팀", rank: "사원",
+    role: "worker", hiredOn: "2021-08-02", completedCount: 148, active: true,
+    qualifications: [{ code: "electric", expiresOn: "2028-02-14" }],
+  },
+  {
+    empNo: "2019-0733", name: "문가영", team: "전기팀", rank: "주임",
+    role: "worker", hiredOn: "2019-07-03", completedCount: 335, active: true,
+    qualifications: [{ code: "electric", expiresOn: "2027-09-25" }],
+  },
+  {
+    empNo: "2023-0491", name: "오재민", team: "생산1팀", rank: "사원",
+    role: "worker", hiredOn: "2023-04-10", completedCount: 38, active: true,
+    qualifications: [],
+  },
 ];
 
 /* ─── 사원증 ─────────────────────────────────────────────────────────────────

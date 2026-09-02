@@ -25,8 +25,14 @@ let removed = 0;
 // 특이사항도 지웁니다. 시연 때 빈 상태에서 시작해야 저장 동작을 보여줄 수 있습니다.
 for (const n of notes.docs) batch.delete(n.ref);
 
+let kept = 0;
+
 for (const doc of snap.docs) {
-  if (doc.id.startsWith("req-seed-")) {
+  // 시연용 요청(scripts/seed-demo.mjs)은 건드리지 않습니다. 여기서 지워버리면
+  // 리셋할 때마다 A동 1층 라인2 의 「작업 대기」가 사라져 다시 심어야 합니다.
+  if (doc.id.startsWith("req-demo-")) {
+    kept += 1;
+  } else if (doc.id.startsWith("req-seed-")) {
     batch.update(doc.ref, {
       status: "pending",
       approverId: null,
@@ -41,5 +47,5 @@ for (const doc of snap.docs) {
 }
 await batch.commit();
 console.log(
-  `승인요청 시드 ${reset}건 초기화 · 테스트 요청 ${removed}건 삭제 · 특이사항 ${notes.size}건 삭제`,
+  `승인요청 시드 ${reset}건 초기화 · 테스트 요청 ${removed}건 삭제 · 시연 요청 ${kept}건 유지 · 특이사항 ${notes.size}건 삭제`,
 );

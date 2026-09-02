@@ -30,3 +30,6 @@ PRD 기반 프로토타입 요청.zip
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Playwright MCP 작업 산출물 (스냅샷·콘솔 로그)
+.playwright-mcp/

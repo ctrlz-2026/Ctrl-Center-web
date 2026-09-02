@@ -20,6 +20,7 @@ import styles from "./page.module.css";
 const CONTROL_LABEL = {
   unlock: "임시 문열림",
   end: "업무 종료",
+  dismiss: "확인 처리",
 } as const;
 
 function buildColumns(
@@ -31,7 +32,9 @@ function buildColumns(
   {
     key: "state",
     header: "상태",
-    width: "130px",
+    // 배지 글자가 "승인됨"(3자)이 최대라 130px 은 과했습니다. 남은 폭은
+    // 작업장·작업 이름에 줍니다 — 이름이 잘리면 표를 읽을 수 없습니다.
+    width: "92px",
     render: (s) => (
       <Badge tone={SITE_STATUS_TONE[s.state]}>{SITE_STATUS_LABEL[s.state]}</Badge>
     ),
@@ -39,7 +42,7 @@ function buildColumns(
   {
     key: "elapsed",
     header: "경과",
-    width: "110px",
+    width: "96px",
     render: (s) => (
       <span
         className={`${styles.elapsed} ${s.overtime ? styles.elapsedOver : ""}`}
@@ -51,7 +54,7 @@ function buildColumns(
   {
     key: "headcount",
     header: "인원",
-    width: "110px",
+    width: "80px",
     render: (s) => s.headcount,
   },
   {
@@ -89,8 +92,8 @@ function buildColumns(
       s.control ? (
         <Button
           size="small"
-          variant={s.control === "end" ? "outlined" : "solid"}
-          color={s.control === "end" ? "assistive" : "primary"}
+          variant={s.control === "unlock" ? "solid" : "outlined"}
+          color={s.control === "unlock" ? "primary" : "assistive"}
           disabled={busyId === s.id}
           onClick={(e) => {
             e.stopPropagation();

@@ -60,7 +60,7 @@ interface RequestsContextValue {
   ) => Promise<void>;
   /** 젯슨이 없는 동안 웹에서 게이트를 진행시킵니다. 기기가 붙으면 사라질 기능입니다. */
   gateControl: (
-    action: "unlock" | "end",
+    action: "unlock" | "end" | "dismiss",
     ref: { requestId?: string; sessionId?: string },
   ) => Promise<void>;
 }
@@ -153,7 +153,7 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
 
   const gateControl = useCallback(
     async (
-      action: "unlock" | "end",
+      action: "unlock" | "end" | "dismiss",
       ref: { requestId?: string; sessionId?: string },
     ) => {
       const res = await fetch("/api/gate/manual", {

@@ -94,6 +94,7 @@ export async function loadDashboard(): Promise<DashboardData> {
     approvalRequestId?: string | null;
     autoClosed?: boolean;
     verification?: string;
+    demo?: boolean;
   });
 
   /* ── 방치된 세션 자동 종료 ──────────────────────────────────────────────
@@ -106,6 +107,9 @@ export async function loadDashboard(): Promise<DashboardData> {
   const autoClosedNow: typeof sessions = [];
   for (const s of sessions) {
     if (s.state !== "working") continue;
+    /* 시연용 세션은 자동 종료하지 않습니다. 화면을 보여주는 동안 행이 저절로
+       사라지면 시연이 안 됩니다. 지우는 건 업무 종료 버튼으로 합니다. */
+    if (s.demo) continue;
     const estimated = Number(
       masters.workCodes.get(s.workCode)?.estimatedMinutes ?? 0,
     );
@@ -163,7 +167,14 @@ export async function loadDashboard(): Promise<DashboardData> {
         work: `${s.workCode} ${wc?.name ?? ""}`.trim(),
         // 젯슨이 없는 동안 웹에서 다음 단계로 넘기는 버튼.
         // 문 열림은 곧 작업 시작이라 "unlocked" 에는 더 이상 수동 버튼이 없습니다.
-        control: view === "working" ? ("end" as const) : null,
+        // 차단은 사람이 확인해야 내려갑니다 — 시간으로는 안 사라집니다.
+        control:
+          view === "working"
+            ? ("end" as const)
+            : view === "blocked"
+              ? ("dismiss" as const)
+              : null,
+        demo: s.demo === true,
         scheduleNote: scheduleNote(s.scheduledAt, s.startedAt),
         startedAtLabel: startedAtDate ? hhmm.format(startedAtDate) : undefined,
         expectedEndLabel:

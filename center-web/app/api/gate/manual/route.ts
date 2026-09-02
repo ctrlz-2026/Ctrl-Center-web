@@ -22,7 +22,7 @@ import { isResponse, requireCaller } from "@/lib/firebase/auth-guard";
  * **예정 시각은 진입을 막지 않습니다.** 미리 시작하든 늦게 시작하든 통과시키고,
  * 예정 대비 얼마나 차이 났는지만 세션에 기록합니다. */
 
-type Action = "unlock" | "end";
+type Action = "unlock" | "end" | "dismiss";
 
 /** 수동 조작으로 만든 출입 기록임을 남깁니다 — 실제 태그·얼굴인식을 거치지
  *  않았으므로 나중에 통계를 낼 때 구분할 수 있어야 합니다. */
@@ -101,6 +101,9 @@ export async function POST(request: Request) {
       endedAt: null,
       members,
       enteredCount: members.length,
+      // 시연용 요청에서 연 세션은 시연용입니다. 안 물려주면 시연 도중 문을 연
+      // 작업만 3시간 뒤 자동 종료 대상이 돼, 나머지와 다르게 굴러갑니다.
+      ...(r.demo === true ? { demo: true } : {}),
       ...MANUAL,
     });
 
@@ -130,10 +133,50 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, sessionId: sessionRef.id, state: "working" });
   }
 
+  /* ── 차단 확인 ───────────────────────────────────────────────────────────
+   * 차단된 세션을 표에서 내립니다.
+   *
+   * 차단은 시간이 지나도 저절로 사라지지 않게 뒀습니다. 자격 미달로 막힌 사람이
+   * 있었다는 사실은 누군가 보고 조치해야 하는 것이라, 아무도 안 봤는데 화면에서
+   * 없어지면 안 됩니다. 그래서 내리는 것도 사람이 누르고, **누가 언제 확인했는지**
+   * 를 세션에 남깁니다.
+   *
+   * 통과율 분모에는 그대로 들어갑니다 — 검증에서 실제로 막힌 건이라 빼면
+   * 통과율이 실제보다 좋아 보입니다. (자동 종료를 분모에서 빼는 것과 다른
+   * 이유입니다. 그쪽은 판정 자체가 없는 세션이라 뺐습니다.) */
+  if (body.action === "dismiss") {
+    if (!body.sessionId) {
+      return NextResponse.json({ error: "sessionId 가 필요해요." }, { status: 400 });
+    }
+    const ref = db.collection("gateSessions").doc(body.sessionId);
+    const snap = await ref.get();
+    if (!snap.exists) {
+      return NextResponse.json({ error: "없는 세션이에요." }, { status: 404 });
+    }
+    if (snap.data()!.state !== "blocked") {
+      return NextResponse.json(
+        { error: "차단된 작업만 확인 처리할 수 있어요." },
+        { status: 409 },
+      );
+    }
+
+    await ref.update({
+      state: "closed",
+      endedAt: now,
+      durationMinutes: 0,
+      passedFirstTry: false,
+      dismissedBy: caller.empNo,
+      dismissedAt: now,
+      verification: "차단 — 관제에서 확인 처리",
+    });
+
+    return NextResponse.json({ ok: true, state: "closed" });
+  }
+
   // ── 업무 종료 ────────────────────────────────────────────────────────────
   if (body.action !== "end") {
     return NextResponse.json(
-      { error: "action 은 unlock · end 중 하나여야 해요." },
+      { error: "action 은 unlock · end · dismiss 중 하나여야 해요." },
       { status: 400 },
     );
   }
