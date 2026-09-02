@@ -235,6 +235,13 @@ node --env-file=.env.local scripts/check-firebase.mjs
 # 시연 전 초기화 (승인 상태·특이사항 리셋)
 node --env-file=.env.local scripts/reset-requests.mjs
 
+# 전체 시나리오 점검 (22건) — 로컬
+node --env-file=.env.local scripts/scenario.mjs
+# 배포본에 그대로
+SCENARIO_BASE=https://ctrl-center-web.vercel.app \
+  node --env-file=.env.local scripts/scenario.mjs
+# ↑ 데이터를 바꿉니다. 돌린 뒤 seed.mjs 로 되돌려 놓으세요
+
 # 보안 규칙 배포
 firebase deploy --only firestore:rules
 ```
