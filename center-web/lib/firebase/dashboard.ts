@@ -271,12 +271,31 @@ export async function loadDashboard(): Promise<DashboardData> {
     const minutes = Math.floor((now - new Date(s.startedAt).getTime()) / 60_000);
     const estimated = Number(wc?.estimatedMinutes ?? 0);
     if (s.state === "working" && estimated > 0 && minutes > estimated) {
-      anomalies.push({
-        id: s.id,
-        kind: "warning",
-        title: "예상시간 초과",
-        detail: `${siteName} · ${s.workCode} ${wc?.name ?? ""}이 예상시간을 ${minutes - estimated}분 넘겼어요.`,
-      });
+      /* 밀폐공간 작업(자격 요건 "confined")은 시간이 늘어질수록 산소 결핍·유해가스
+       * 축적 위험이 커지는 작업이라, 다른 작업의 "예상시간 초과"와 같은 급으로
+       * 다루지 않기로 했습니다 (팀 결정, 2026-09-03 대화).
+       *
+       * 이 작업 하나만 시나리오로 잡습니다 — 모든 작업코드에 일반화하지 않고,
+       * requiredQualifications 에 "confined" 가 있는지로 판정해 데이터가 바뀌어도
+       * 이 코드를 다시 고칠 필요가 없게 합니다. 알림 체계가 따로 없는 지금은
+       * kind 를 blocked(빨강)로 올려 관제 화면에서 안전관리자 눈에 먼저 띄게
+       * 합니다 — 이게 "안전관리자에게 뜨는 알림"의 현재 구현입니다. */
+      const isConfinedSpace = (wc?.requiredQualifications ?? []).includes("confined");
+      if (isConfinedSpace) {
+        anomalies.push({
+          id: s.id,
+          kind: "blocked",
+          title: "밀폐공간 작업시간 초과 — 안전관리자 확인 필요",
+          detail: `${siteName} · ${s.workCode} ${wc?.name ?? ""}이 예상시간을 ${minutes - estimated}분 넘겼어요. 산소·유해가스 상태를 반드시 현장에서 확인해 주세요.`,
+        });
+      } else {
+        anomalies.push({
+          id: s.id,
+          kind: "warning",
+          title: "예상시간 초과",
+          detail: `${siteName} · ${s.workCode} ${wc?.name ?? ""}이 예상시간을 ${minutes - estimated}분 넘겼어요.`,
+        });
+      }
     }
   }
 
