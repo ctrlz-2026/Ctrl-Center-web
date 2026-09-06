@@ -1,0 +1,211 @@
+<meta charset="utf-8">
+<title>Ctrl+Center 시스템 구성도</title>
+<style>
+  body { margin: 0; background: #fff; }
+  svg { display: block; }
+  .t     { font-family: Pretendard, "Malgun Gothic", sans-serif; }
+  .gtitle{ font-size: 19px; font-weight: 800; fill: #111827; }
+  .gsub  { font-size: 13px; font-weight: 600; fill: #6B7280; }
+  .nname { font-size: 15px; font-weight: 700; fill: #111827; }
+  .nrole { font-size: 12.5px; font-weight: 500; fill: #6B7280; }
+  /* 선 위를 지나는 라벨이라 흰색 외곽선을 둘러 글자가 선에 묻히지 않게 합니다. */
+  .elabel{ font-size: 12.5px; font-weight: 700;
+           paint-order: stroke; stroke: #FFFFFF; stroke-width: 5px; stroke-linejoin: round; }
+  .ltitle{ font-size: 14px; font-weight: 800; fill: #111827; }
+  .ltext { font-size: 13px; font-weight: 600; fill: #374151; }
+  .owner { font-size: 12.5px; font-weight: 700; }
+  .htitle{ font-size: 27px; font-weight: 800; fill: #111827; }
+  .hsub  { font-size: 14px; font-weight: 500; fill: #6B7280; }
+</style>
+
+<svg id="diagram" width="1560" height="1000" viewBox="0 0 1560 1000" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="aUSB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6B7280"/></marker>
+    <marker id="aRELAY" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#111827"/></marker>
+    <marker id="aHTTPS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563EB"/></marker>
+    <marker id="aSSE" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16A34A"/></marker>
+    <marker id="aSDK" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#EA580C"/></marker>
+  </defs>
+
+  <rect width="1560" height="1000" fill="#FFFFFF"/>
+
+  <!-- ── 제목 ─────────────────────────────────────────────── -->
+  <text class="t htitle" x="40" y="48">Ctrl+Center 시스템 구성도</text>
+  <text class="t hsub"   x="40" y="74">AI 안전검증 출입제어 시스템 · 팀 Ctrl+Z · 2026-09-06</text>
+
+  <!-- ══ 그룹 1 · 현장 게이트 설비 ══════════════════════════ -->
+  <rect x="36" y="108" width="330" height="606" rx="14" fill="#F9FAFB" stroke="#D1D5DB" stroke-width="1.5" stroke-dasharray="7 5"/>
+  <text class="t gtitle" x="56" y="140">현장 게이트 설비</text>
+  <text class="t gsub"   x="56" y="161"><tspan fill="#B45309" font-weight="800">예시 · 확정 전</tspan> — 스탠드 일체형</text>
+  <text class="t owner"  x="56" y="182" fill="#7C3AED">담당 · 정천호(하드웨어) / 박상하(연동)</text>
+
+  <rect x="60" y="200" width="282" height="62" rx="10" fill="#FFF" stroke="#9CA3AF" stroke-width="1.5"/>
+  <text class="t nname" x="76" y="226">NFC 사원증 리더기</text>
+  <text class="t nrole" x="76" y="246">카드 UID 읽기 (입장 / 퇴장)</text>
+
+  <rect x="60" y="278" width="282" height="62" rx="10" fill="#FFF" stroke="#9CA3AF" stroke-width="1.5"/>
+  <text class="t nname" x="76" y="304">RealSense D435i</text>
+  <text class="t nrole" x="76" y="324">RGB + 깊이 영상 촬영</text>
+
+  <rect x="60" y="356" width="282" height="62" rx="10" fill="#FFF" stroke="#9CA3AF" stroke-width="1.5"/>
+  <text class="t nname" x="76" y="382">터치 모니터</text>
+  <text class="t nrole" x="76" y="402">키오스크 화면 출력 · 작업 선택</text>
+
+  <rect x="60" y="434" width="282" height="62" rx="10" fill="#FFF" stroke="#9CA3AF" stroke-width="1.5"/>
+  <text class="t nname" x="76" y="460">USB 스피커</text>
+  <text class="t nrole" x="76" y="480">판정 결과 음성 안내</text>
+
+  <rect x="60" y="530" width="282" height="62" rx="10" fill="#FFF" stroke="#374151" stroke-width="2"/>
+  <text class="t nname" x="76" y="556">전자식 도어락</text>
+  <text class="t nrole" x="76" y="576">문 개폐 (해정 신호 수신)</text>
+
+  <rect x="60" y="620" width="282" height="62" rx="10" fill="#FFF" stroke="#9CA3AF" stroke-width="1.5"/>
+  <text class="t nname" x="76" y="646">USB 3.0 유전원 허브</text>
+  <text class="t nrole" x="76" y="666">젯슨 USB 포트 부족 보완</text>
+
+  <!-- ══ 그룹 2 · 젯슨 ═════════════════════════════════════ -->
+  <rect x="418" y="108" width="330" height="606" rx="14" fill="#F5F3FF" stroke="#C4B5FD" stroke-width="1.5" stroke-dasharray="7 5"/>
+  <text class="t gtitle" x="438" y="140">젯슨 Orin Nano (엣지 AI)</text>
+  <text class="t gsub"   x="438" y="161"><tspan fill="#B45309" font-weight="800">예시 · 확정 전</tspan> — 게이트당 1대</text>
+  <text class="t owner"  x="438" y="182" fill="#7C3AED">담당 · 박상하</text>
+
+  <rect x="442" y="200" width="282" height="62" rx="10" fill="#FFF" stroke="#8B5CF6" stroke-width="1.5"/>
+  <text class="t nname" x="458" y="226">키오스크 앱</text>
+  <text class="t nrole" x="458" y="246">승인된 작업 표시 · 단계 안내</text>
+
+  <rect x="442" y="278" width="282" height="62" rx="10" fill="#FFF" stroke="#8B5CF6" stroke-width="1.5"/>
+  <text class="t nname" x="458" y="304">얼굴인식 모듈</text>
+  <text class="t nrole" x="458" y="324">사번 1:1 매칭 · 일치율 산출</text>
+
+  <rect x="442" y="356" width="282" height="62" rx="10" fill="#FFF" stroke="#8B5CF6" stroke-width="1.5"/>
+  <text class="t nname" x="458" y="382">PPE 검출 (YOLO)</text>
+  <text class="t nrole" x="458" y="402">보호구 착용 여부 판정</text>
+
+  <rect x="442" y="434" width="282" height="62" rx="10" fill="#FFF" stroke="#8B5CF6" stroke-width="1.5"/>
+  <text class="t nname" x="458" y="460">이벤트 전송기</text>
+  <text class="t nrole" x="458" y="480">관찰 보고 · 멱등키 · 오프라인 재전송</text>
+
+  <rect x="442" y="530" width="282" height="62" rx="10" fill="#FFF" stroke="#8B5CF6" stroke-width="1.5"/>
+  <text class="t nname" x="458" y="556">해정 실행부</text>
+  <text class="t nrole" x="458" y="576">서버 unlock 응답을 받아 문 열기</text>
+
+  <!-- ══ 그룹 3 · 클라우드 ═══════════════════════════════════ -->
+  <rect x="800" y="108" width="360" height="606" rx="14" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.5" stroke-dasharray="7 5"/>
+  <text class="t gtitle" x="820" y="140">클라우드 (Vercel · Firebase)</text>
+  <text class="t gsub"   x="820" y="161"><tspan fill="#15803D" font-weight="800">구현 완료</tspan> — 진실 공급원</text>
+  <text class="t owner"  x="820" y="182" fill="#7C3AED">담당 · 김병오</text>
+
+  <rect x="824" y="200" width="312" height="62" rx="10" fill="#FFF" stroke="#3B82F6" stroke-width="1.5"/>
+  <text class="t nname" x="840" y="226">게이트 이벤트 API</text>
+  <text class="t nrole" x="840" y="246">관찰 수신 · 중복 제거 · 상태 판정</text>
+
+  <rect x="824" y="278" width="312" height="62" rx="10" fill="#FFF" stroke="#3B82F6" stroke-width="1.5"/>
+  <text class="t nname" x="840" y="304">승인 워크플로우 API</text>
+  <text class="t nrole" x="840" y="324">작업 신청 · 팀장 승인 / 반려</text>
+
+  <rect x="824" y="356" width="312" height="62" rx="10" fill="#FFF" stroke="#3B82F6" stroke-width="1.5"/>
+  <text class="t nname" x="840" y="382">권한 검증부</text>
+  <text class="t nrole" x="840" y="402">ID 토큰 커스텀 클레임으로 역할 판정</text>
+
+  <rect x="824" y="434" width="312" height="62" rx="10" fill="#FFF" stroke="#16A34A" stroke-width="2"/>
+  <text class="t nname" x="840" y="460">실시간 스트림 (SSE)</text>
+  <text class="t nrole" x="840" y="480">변경분을 브라우저로 밀어줌</text>
+
+  <rect x="824" y="530" width="312" height="72" rx="10" fill="#FFF7ED" stroke="#F97316" stroke-width="2"/>
+  <text class="t nname" x="840" y="556">Firestore (Document DB)</text>
+  <text class="t nrole" x="840" y="576">13개 컬렉션 · 세션 · 출입기록 · 원시로그</text>
+  <text class="t nrole" x="840" y="593">보안규칙 전면 차단 — 서버만 접근</text>
+
+  <rect x="824" y="620" width="312" height="62" rx="10" fill="#FFF7ED" stroke="#F97316" stroke-width="2"/>
+  <text class="t nname" x="840" y="646">Firebase Auth</text>
+  <text class="t nrole" x="840" y="666">계정 · 역할 커스텀 클레임 발급</text>
+
+  <!-- ══ 그룹 4 · 사용자 브라우저 ════════════════════════════ -->
+  <rect x="1212" y="108" width="312" height="606" rx="14" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.5" stroke-dasharray="7 5"/>
+  <text class="t gtitle" x="1232" y="140">사용자 웹 (브라우저)</text>
+  <text class="t gsub"   x="1232" y="161"><tspan fill="#15803D" font-weight="800">구현 완료</tspan> — 사무실 PC · 모바일</text>
+  <text class="t owner"  x="1232" y="182" fill="#7C3AED">담당 · 김병오</text>
+
+  <rect x="1236" y="200" width="264" height="62" rx="10" fill="#FFF" stroke="#22C55E" stroke-width="1.5"/>
+  <text class="t nname" x="1252" y="226">관제 대시보드</text>
+  <text class="t nrole" x="1252" y="246">작업장 현황 · 이상 상황 실시간</text>
+
+  <rect x="1236" y="278" width="264" height="62" rx="10" fill="#FFF" stroke="#22C55E" stroke-width="1.5"/>
+  <text class="t nname" x="1252" y="304">작업 신청 · 승인함</text>
+  <text class="t nrole" x="1252" y="324">작업자 신청 → 팀장 결재</text>
+
+  <rect x="1236" y="356" width="264" height="62" rx="10" fill="#FFF" stroke="#22C55E" stroke-width="1.5"/>
+  <text class="t nname" x="1252" y="382">마이페이지</text>
+  <text class="t nrole" x="1252" y="402">본인 자격 · 작업이력 · 출입기록</text>
+
+  <rect x="1236" y="434" width="264" height="62" rx="10" fill="#FFF" stroke="#22C55E" stroke-width="1.5"/>
+  <text class="t nname" x="1252" y="460">계정 관리</text>
+  <text class="t nrole" x="1252" y="480">안전관리자 전용 · 자격 · 사원증</text>
+
+  <rect x="1236" y="530" width="264" height="62" rx="10" fill="#FFF" stroke="#22C55E" stroke-width="1.5"/>
+  <text class="t nname" x="1252" y="556">작업장별 특이사항</text>
+  <text class="t nrole" x="1252" y="576">다음 작업자에게 남기는 인수인계</text>
+
+  <!-- ══ 연결선 ═════════════════════════════════════════════ -->
+  <!-- USB: 주변기기 → 젯슨 -->
+  <path d="M342,231 L442,231" stroke="#6B7280" stroke-width="5" fill="none" marker-end="url(#aUSB)"/>
+  <path d="M342,309 L442,309" stroke="#6B7280" stroke-width="5" fill="none" marker-end="url(#aUSB)"/>
+  <path d="M342,387 L442,387" stroke="#6B7280" stroke-width="5" fill="none" marker-start="url(#aUSB)" marker-end="url(#aUSB)"/>
+  <path d="M342,465 L442,465" stroke="#6B7280" stroke-width="5" fill="none" marker-start="url(#aUSB)"/>
+  <text class="t elabel" x="356" y="222" fill="#6B7280">USB</text>
+  <text class="t elabel" x="356" y="300" fill="#6B7280">USB</text>
+  <text class="t elabel" x="356" y="378" fill="#6B7280">USB · HDMI</text>
+  <text class="t elabel" x="356" y="456" fill="#6B7280">USB</text>
+
+  <!-- 릴레이: 젯슨 해정부 → 도어락 -->
+  <path d="M442,561 L342,561" stroke="#111827" stroke-width="5" fill="none" marker-end="url(#aRELAY)"/>
+  <text class="t elabel" x="352" y="552" fill="#111827">GPIO · 릴레이</text>
+
+  <!-- HTTPS: 젯슨 ↔ 클라우드 -->
+  <path d="M724,465 L824,231" stroke="#2563EB" stroke-width="3" fill="none" marker-end="url(#aHTTPS)"/>
+  <text class="t elabel" x="736" y="360" fill="#2563EB">HTTPS · 관찰 보고</text>
+  <path d="M824,262 L724,520" stroke="#2563EB" stroke-width="3" fill="none" marker-end="url(#aHTTPS)"/>
+  <text class="t elabel" x="736" y="500" fill="#2563EB">HTTPS · 판정 응답</text>
+
+  <!-- HTTPS: 브라우저 → 클라우드 -->
+  <path d="M1236,309 L1136,309" stroke="#2563EB" stroke-width="3" fill="none" marker-end="url(#aHTTPS)"/>
+  <text class="t elabel" x="1146" y="300" fill="#2563EB">HTTPS 요청</text>
+
+  <!-- SSE: 클라우드 → 브라우저 -->
+  <path d="M1136,465 L1236,231" stroke="#16A34A" stroke-width="3" fill="none" stroke-dasharray="9 5" marker-end="url(#aSSE)"/>
+  <text class="t elabel" x="1146" y="380" fill="#16A34A">SSE 서버 push</text>
+
+  <!-- Admin SDK: 서버 → DB -->
+  <path d="M980,496 L980,530" stroke="#EA580C" stroke-width="3" fill="none" marker-start="url(#aSDK)" marker-end="url(#aSDK)"/>
+  <text class="t elabel" x="992" y="519" fill="#EA580C">Admin SDK</text>
+
+  <!-- ══ 범례 ═══════════════════════════════════════════════ -->
+  <rect x="36" y="742" width="1488" height="216" rx="14" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1.5"/>
+  <text class="t ltitle" x="60" y="776">통신 방식</text>
+
+  <line x1="60"  y1="806" x2="140" y2="806" stroke="#6B7280" stroke-width="5"/>
+  <text class="t ltext" x="152" y="811">USB — 카메라 · NFC 리더 · 스피커 · 모니터 (유선, 현장 스탠드 내부)</text>
+
+  <line x1="60"  y1="840" x2="140" y2="840" stroke="#111827" stroke-width="5"/>
+  <text class="t ltext" x="152" y="845">GPIO · 릴레이 — 젯슨이 도어락에 보내는 해정 신호 (전기 접점)</text>
+
+  <line x1="60"  y1="874" x2="140" y2="874" stroke="#2563EB" stroke-width="3"/>
+  <text class="t ltext" x="152" y="879">HTTPS — 젯슨↔서버, 브라우저→서버 (인터넷 · 기기키 / ID 토큰 인증)</text>
+
+  <line x1="740" y1="806" x2="820" y2="806" stroke="#16A34A" stroke-width="3" stroke-dasharray="9 5"/>
+  <text class="t ltext" x="832" y="811">SSE — 서버가 브라우저로 변경분을 밀어줌 (단방향 · 새로고침 불필요)</text>
+
+  <line x1="740" y1="840" x2="820" y2="840" stroke="#EA580C" stroke-width="3"/>
+  <text class="t ltext" x="832" y="845">Admin SDK — 서버만 DB 접근. 브라우저·젯슨은 DB 직접 접근 불가</text>
+
+  <text class="t ltext" x="740" y="879" fill="#6B7280">※ 선 굵기 = 물리 배선(굵게) / 네트워크 통신(얇게)</text>
+  <text class="t ltext" x="740" y="903" fill="#6B7280">※ <tspan fill="#15803D" font-weight="800">구현 완료</tspan> = 지금 배포되어 동작 · <tspan fill="#B45309" font-weight="800">예시 · 확정 전</tspan> = 구상단계, 장비·구성 변경 가능</text>
+
+  <text class="t ltitle" x="60" y="920">설계 원칙</text>
+  <text class="t ltext"  x="60" y="944">젯슨은 “관찰”만 보고하고 “상태”를 주장하지 않습니다 — 인원 충족 · 해정 여부는 서버가 판정해 응답으로 내려줍니다.</text>
+</svg>
