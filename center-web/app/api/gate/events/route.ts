@@ -48,10 +48,44 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "JSON 형식이 아니에요." }, { status: 400 });
   }
 
-  if (!Array.isArray(body?.events)) {
+  if (
+    typeof body?.gate_id !== "string" ||
+    body.gate_id.length === 0 ||
+    typeof body?.approval_request_id !== "string" ||
+    body.approval_request_id.length === 0 ||
+    !Array.isArray(body?.events)
+  ) {
     return NextResponse.json(
-      { error: "events 배열이 필요해요." },
+      { error: "gate_id · approval_request_id · events 배열이 필요해요." },
       { status: 400 },
+    );
+  }
+
+  // 선택한 키오스크 화면의 게이트와 승인 작업이 실제로 같은 작업장인지 먼저
+  // 확인합니다. 이 검증이 없으면 다른 작업장의 Jetson 이벤트가 섞일 수 있습니다.
+  const db = adminDb();
+  const [gateSnap, requestSnap] = await Promise.all([
+    db.collection("gates").doc(body.gate_id).get(),
+    db.collection("approvalRequests").doc(body.approval_request_id).get(),
+  ]);
+  if (!gateSnap.exists || !requestSnap.exists) {
+    return NextResponse.json(
+      { error: "선택한 게이트 또는 승인 작업을 찾을 수 없어요." },
+      { status: 404 },
+    );
+  }
+  const gate = gateSnap.data()!;
+  const approval = requestSnap.data()!;
+  if (approval.status !== "approved") {
+    return NextResponse.json(
+      { error: "승인된 작업만 현장 검증할 수 있어요." },
+      { status: 409 },
+    );
+  }
+  if (String(gate.siteId) !== String(approval.siteId)) {
+    return NextResponse.json(
+      { error: "게이트와 승인 작업장의 위치가 일치하지 않아요." },
+      { status: 409 },
     );
   }
 
@@ -70,7 +104,6 @@ export async function POST(request: Request) {
    * idempotency_key 를 문서 ID 로 쓰고 create() 를 부르면, 같은 키가 이미 있을 때
    * Firestore 가 ALREADY_EXISTS 로 거절합니다. 메모리 Set 과 달리 서버를 재시작해도
    * 유지되고, 서버가 여러 대여도 동작합니다. */
-  const db = adminDb();
   const receivedAt = new Date().toISOString();
   let accepted = 0;
   let duplicated = 0;
@@ -83,6 +116,8 @@ export async function POST(request: Request) {
         .create({
           idempotencyKey: event.idempotency_key,
           sessionId: null, // 세션 매칭은 상태 계산이 붙을 때 채웁니다
+          gateId: body.gate_id,
+          approvalRequestId: body.approval_request_id,
           gateKey,
           kind: event.kind,
           payload: event.payload,
