@@ -153,3 +153,90 @@ export interface GateStateResponse {
   accepted: number;
   duplicated: number;
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * 일일 번들 — 네트워크가 끊겨도 현장이 돌아가게 하는 장치
+ *
+ * 2차 멘토링에서 받은 조언입니다. 지금 구조는 젯슨이 관찰을 보내고 **서버가
+ * 판정**해 응답을 내려주는데, 그러면 인터넷이 끊긴 순간 문을 열 수 없습니다.
+ * 멘토님 답은 "서버가 **내일 쓸 자료를 매일 미리 젯슨으로 옮겨놓으면** 끊겨도
+ * 쓸 수 있다"였고, 그 자료 묶음이 이 번들입니다.
+ *
+ *   평소(온라인)  : 젯슨 관찰 → 서버 판정 → 응답대로 표시   (기존 그대로)
+ *   끊겼을 때     : 받아둔 번들로 젯슨이 스스로 판정, 기록은 쌓아두었다가
+ *                  복구되면 /api/gate/events 로 한 번에 올려보냄
+ *
+ * 온라인일 때는 **서버 판정이 항상 우선**입니다. 번들은 대비책이지 평소 경로가
+ * 아닙니다 — 둘 다 판정하게 두면 어느 쪽이 맞는지 다투게 됩니다.
+ *
+ * 받는 곳: GET /api/gate/{gate_id}/bundle?date=YYYY-MM-DD   (X-Gate-Key 필요)
+ * 바뀐 게 없으면 ETag 로 304 를 돌려주므로, 매일 받아도 낭비가 없습니다.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** 번들에 담기는 보호구. `yolo_class` 는 학습 클래스명과 1:1 입니다. */
+export interface BundlePpe {
+  code: string;
+  name: string;
+  yolo_class: string | null;
+}
+
+export interface BundleQualification {
+  code: string;
+  name: string;
+}
+
+/** 작업코드가 요구하는 기준. 젯슨이 오프라인에서 이 값으로 판정합니다. */
+export interface BundleWorkCode {
+  code: string;
+  name: string;
+  required_headcount: number;
+  required_ppe: BundlePpe[];
+  required_qualifications: BundleQualification[];
+  estimated_minutes: number;
+}
+
+/** 그날 그 게이트에서 열릴 수 있는 작업 (= 승인이 끝난 것만). */
+export interface BundleWork {
+  request_id: string;
+  work_code: string;
+  scheduled_at: string | null;
+  requester_emp_no: string;
+  /** 팀장이 승인하며 남긴 전달사항. 키오스크 작업 카드에 그대로 띄웁니다. */
+  note: string | null;
+}
+
+/**
+ * 그 게이트에 들어올 수 있는 사람.
+ *
+ * **얼굴 사진·특징값은 담지 않습니다.** 생체정보를 웹 DB 에 두지 않는다는 원칙이
+ * 그대로 적용됩니다 — 등록을 마쳤는지(`face_enrolled`)만 알려주고, 실제 템플릿은
+ * 젯슨이 자기 안에 가지고 있습니다.
+ */
+export interface BundleWorker {
+  emp_no: string;
+  name: string;
+  team: string;
+  rank: string;
+  /** 폐기되지 않은 사원증 UID. 재발급 중이면 여러 장일 수 있습니다. */
+  card_uids: string[];
+  qualifications: { code: string; name: string; expires_on: string }[];
+  /** 배정된 작업코드. null 이면 전 작업 가능(별도 제한 없음)입니다. */
+  allowed_work_codes: string[] | null;
+  face_enrolled: boolean;
+}
+
+export interface GateBundle {
+  /** 형식이 바뀌면 올립니다. 젯슨이 모르는 버전이면 받지 않게 하려는 값입니다. */
+  bundle_version: number;
+  gate_id: string;
+  site_id: string;
+  site_name: string;
+  /** 이 번들이 쓰일 날짜 (YYYY-MM-DD, 한국 시각 기준). */
+  valid_for: string;
+  generated_at: string;
+  /** 내용이 같으면 같은 값. 젯슨이 다시 받을지 판단하는 데 씁니다. */
+  bundle_hash: string;
+  works: BundleWork[];
+  work_codes: BundleWorkCode[];
+  workers: BundleWorker[];
+}

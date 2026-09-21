@@ -15,6 +15,8 @@ interface Masters {
   employees: Map<string, FirebaseFirestore.DocumentData>;
   sites: Map<string, string>;
   ppeNames: Map<string, string>;
+  /** 보호구 코드 → AI 학습 클래스명. 아직 확정 안 된 항목은 null 입니다. */
+  ppeYolo: Map<string, string | null>;
   qualNames: Map<string, string>;
 }
 
@@ -32,6 +34,9 @@ export async function loadMasters(): Promise<Masters> {
     employees: new Map(emp.docs.map((d) => [d.id, d.data()])),
     sites: new Map(site.docs.map((d) => [d.id, String(d.data().name)])),
     ppeNames: new Map(ppe.docs.map((d) => [d.id, String(d.data().name)])),
+    ppeYolo: new Map(
+      ppe.docs.map((d) => [d.id, (d.data().yoloClass as string | null) ?? null]),
+    ),
     qualNames: new Map(qual.docs.map((d) => [d.id, String(d.data().name)])),
   };
 }

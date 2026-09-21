@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
+import { isResponse, resolveGateByKey } from "@/lib/firebase/gate-auth";
 import type { GateEvent, GateEventsRequest, GateStateResponse } from "@/lib/gate-contract";
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -32,14 +33,11 @@ function isValidEvent(e: unknown): e is GateEvent {
 }
 
 export async function POST(request: Request) {
-  const gateKey = request.headers.get("x-gate-key");
-  if (!gateKey) {
-    return NextResponse.json(
-      { error: "X-Gate-Key 헤더가 필요해요." },
-      { status: 401 },
-    );
-  }
-  // TODO: gates 컬렉션에서 키 해시 대조. 지금은 통과시킵니다.
+  /* 경로에 게이트 ID 가 없으므로 키만 보고 어느 게이트인지 찾습니다.
+     (예전엔 키가 있기만 하면 통과시켰는데, 그러면 아무 문자열로나 이벤트를
+     밀어넣을 수 있어서 실제로 대조하도록 바꿨습니다) */
+  const gate = await resolveGateByKey(request);
+  if (isResponse(gate)) return gate;
 
   let body: GateEventsRequest;
   try {
@@ -83,7 +81,8 @@ export async function POST(request: Request) {
         .create({
           idempotencyKey: event.idempotency_key,
           sessionId: null, // 세션 매칭은 상태 계산이 붙을 때 채웁니다
-          gateKey,
+          // 기기 키가 아니라 게이트 ID 를 남깁니다 — 비밀값을 기록에 남길 이유가 없습니다
+          gateId: gate.id,
           kind: event.kind,
           payload: event.payload,
           occurredAt: event.occurred_at,
