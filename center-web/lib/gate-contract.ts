@@ -89,6 +89,13 @@ export interface GateEvent {
 }
 
 export interface GateEventsRequest {
+  /**
+   * 키오스크에서 사용자가 선택한 게이트. Jetson 한 대를 한 게이트에 고정하지
+   * 않아도 되도록, 각 검증 묶음의 문맥을 명시합니다.
+   */
+  gate_id: string;
+  /** 승인된 작업 선택 화면에서 넘어온 요청 ID. */
+  approval_request_id: string;
   /** 배열로 보냅니다. 오프라인 복구 시 쌓인 이벤트를 한 번에 밀어올릴 수 있습니다. */
   events: GateEvent[];
 }

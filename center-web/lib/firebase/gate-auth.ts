@@ -88,28 +88,7 @@ export async function requireGate(
   return { id: gateId, siteId: String(g.siteId), name: String(g.name ?? gateId) };
 }
 
-/**
- * 경로에 게이트 ID 가 없는 요청(이벤트 수신구)에서, 키만 보고 어느 게이트인지 찾습니다.
- * 등록된 게이트를 순회하며 키가 맞는 것을 고릅니다.
- */
-export async function resolveGateByKey(
-  request: Request,
-): Promise<Gate | NextResponse> {
-  const sent = request.headers.get("x-gate-key");
-  if (!sent) {
-    return NextResponse.json(
-      { error: "X-Gate-Key 헤더가 필요해요." },
-      { status: 401 },
-    );
-  }
-
-  const snap = await adminDb().collection("gates").get();
-  for (const doc of snap.docs) {
-    const expected = process.env[envNameFor(doc.id)];
-    if (expected && sameSecret(sent, expected)) {
-      const g = doc.data();
-      return { id: doc.id, siteId: String(g.siteId), name: String(g.name ?? doc.id) };
-    }
-  }
-  return NextResponse.json({ error: "기기 키가 맞지 않아요." }, { status: 403 });
-}
+/* 예전에는 경로에 게이트 ID 가 없는 이벤트 수신구를 위해 "키만 보고 게이트를
+ * 찾는" 함수가 여기 있었습니다. 상하 님 변경으로 이벤트 본문에 gate_id 가
+ * 명시되면서 필요가 없어졌고, 남겨두면 "아무 게이트 키나 통과"하는 길이 다시
+ * 생길 수 있어 지웠습니다. 모든 경로가 requireGate 로 **특정 게이트**를 대조합니다. */
