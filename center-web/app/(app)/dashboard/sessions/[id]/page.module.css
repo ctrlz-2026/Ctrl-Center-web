@@ -38,26 +38,19 @@
   }
 }
 
-.placeholder {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 20px;
-  border-radius: var(--radius-12);
-  background: var(--ct-page-bg);
-  box-shadow: var(--line-inset-normal);
-}
-
-.placeholderTitle {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--label-normal);
-}
-
-.placeholderBody {
+/* 현장 화면으로 가는 입구. 관제에서 끝내지 않고 문 앞(키오스크)에서 끝냅니다. */
+.kiosk {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  height: var(--ct-control-sm);
+  padding: 0 12px;
+  border-radius: var(--radius-8);
+  background: var(--ct-kiosk-surface);
+  color: var(--static-white);
   font-size: 13px;
-  line-height: 1.6;
-  color: var(--label-alternative);
+  font-weight: 600;
+  text-decoration: none;
 }
 
 .empty {

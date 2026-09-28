@@ -4,18 +4,20 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Badge } from "@/components/Badge";
 import { Card, CardHeader, CardTitle, InfoRow } from "@/components/Card";
+import { GateSimulation } from "@/components/GateSimulation";
 import { PageTitle, Stack } from "@/components/Layout";
 import { useRequests } from "@/lib/store";
 import { SITE_STATUS_LABEL, SITE_STATUS_TONE } from "@/lib/types";
 import styles from "./page.module.css";
 
-/* 작업장별 현황(W4)에서 작업 제목을 눌러 들어오는 상세 페이지.
+/* 전체 현황(W4)에서 진행중 작업을 눌러 들어오는 상세 페이지.
  *
- * 지금은 세션 정보(작업장·인원·시작/예정종료 시각)만 보여주는 **틀**입니다.
- * 젯슨에서 실제로 문이 열렸다는 신호가 오면 작업자가 들어가 작업하는
- * 시뮬레이션을 붙이기로 했는데(천호 담당), 그 부분은 아래 "placeholder"
- * 자리에 나중에 끼워 넣으면 됩니다 — 이 페이지의 라우팅·데이터 연결만
- * 미리 만들어 둔 상태입니다. */
+ * 위: 세션 정보 / 아래: 게이트 시뮬레이션 자리(천호 님 담당, components/GateSimulation).
+ * 값은 관제 실시간 스트림에서 오므로 키오스크에서 상태가 바뀌면 이 화면도
+ * 새로고침 없이 따라 바뀝니다.
+ *
+ * 관제는 보는 화면이라 여기에도 제어 버튼은 없습니다. 이 작업을 끝내거나
+ * 현장 상황을 보려면 그 게이트의 키오스크 화면으로 갑니다. */
 
 export default function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,24 +29,29 @@ export default function SessionDetailPage() {
     return (
       <Stack>
         <div className={styles.empty}>
-          <PageTitle>세션 상세</PageTitle>
+          <PageTitle>작업 상세</PageTitle>
           <p>
             {loading
               ? "불러오는 중이에요."
-              : "이 세션을 찾을 수 없어요 — 이미 종료됐거나 주소가 잘못됐을 수 있어요."}
+              : "이 작업을 찾을 수 없어요 — 이미 종료됐거나 주소가 잘못됐을 수 있어요."}
           </p>
           <Link href="/dashboard" className={styles.back}>
-            ← 작업장별 현황으로
+            ← 전체 현황으로
           </Link>
         </div>
       </Stack>
     );
   }
 
+  const [entered, required] = session.headcount
+    .replace("명", "")
+    .split("/")
+    .map((n) => Number(n.trim()));
+
   return (
     <Stack>
       <Link href="/dashboard" className={styles.back}>
-        ← 작업장별 현황으로
+        ← 전체 현황으로
       </Link>
 
       <div className={styles.headRow}>
@@ -52,15 +59,30 @@ export default function SessionDetailPage() {
         <Badge tone={SITE_STATUS_TONE[session.state]}>
           {SITE_STATUS_LABEL[session.state]}
         </Badge>
+        {session.gateId ? (
+          <a
+            href={
+              session.requestId
+                ? `/kiosk/${session.gateId}/${session.requestId}/live`
+                : `/kiosk/${session.gateId}`
+            }
+            target="_blank"
+            rel="noreferrer"
+            className={styles.kiosk}
+          >
+            이 게이트 키오스크 보기 ↗
+          </a>
+        ) : null}
       </div>
       <span className={styles.site}>{session.site}</span>
 
       <Card padding={24} gap={16}>
         <CardHeader>
-          <CardTitle>세션 정보</CardTitle>
+          <CardTitle>작업 정보</CardTitle>
         </CardHeader>
         <div className={styles.infoGrid}>
           <InfoRow label="인원">{session.headcount}</InfoRow>
+          <InfoRow label="참여자">{session.members.join(", ") || "—"}</InfoRow>
           <InfoRow label="경과">{session.elapsed}</InfoRow>
           {session.startedAtLabel ? (
             <InfoRow label="시작 시각">{session.startedAtLabel}</InfoRow>
@@ -78,15 +100,16 @@ export default function SessionDetailPage() {
         <CardHeader>
           <CardTitle>게이트 시뮬레이션</CardTitle>
         </CardHeader>
-        <div className={styles.placeholder}>
-          <span className={styles.placeholderTitle}>🚧 준비 중인 자리</span>
-          <p className={styles.placeholderBody}>
-            젯슨 오린에서 &ldquo;문이 열렸다&rdquo; 신호가 오면, 작업자가 문
-            앞에서 기다리다가 들어가 작업을 시작하는 과정을 여기서 화면으로
-            보여줄 예정이에요. 지금은 라우팅과 세션 데이터 연결까지만 만들어둔
-            상태이고, 실제 시뮬레이션 UI는 천호 님이 붙이기로 했어요.
-          </p>
-        </div>
+        <GateSimulation
+          state={session.state}
+          siteName={session.site}
+          work={session.work}
+          required={Number.isFinite(required) ? required : 0}
+          entered={Number.isFinite(entered) ? entered : 0}
+          members={session.members}
+          elapsed={session.elapsed}
+          progress={session.progress}
+        />
       </Card>
     </Stack>
   );

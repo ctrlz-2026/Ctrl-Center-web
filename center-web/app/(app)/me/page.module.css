@@ -75,6 +75,27 @@
   font-weight: 600;
 }
 
+.sectionHint {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--label-alternative);
+}
+
+.detailHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* 저장 상태 한 줄. 저장이 됐는지 글로 확인할 수 있게 합니다. */
+.savedLine {
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 500;
+  color: var(--label-alternative);
+}
+
 .noteHint {
   font-size: 13px;
   line-height: 1.385;

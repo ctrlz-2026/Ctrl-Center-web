@@ -100,6 +100,25 @@ export interface GateEventsRequest {
   events: GateEvent[];
 }
 
+/**
+ * 키오스크에서 고른 작업 — 젯슨이 "지금 어느 작업의 검증인지" 아는 방법.
+ *
+ *   GET /api/gate/{gate_id}/context   (X-Gate-Key 필요)
+ *
+ * 키오스크에서 작업을 누르면 서버가 게이트별로 적어 둡니다. 젯슨은 이 값을
+ * 읽어 검증을 시작하고, 이벤트를 보낼 때 `approval_request_id` 를 그대로
+ * 돌려줍니다 (GateEventsRequest). 아무것도 안 골랐으면 null 입니다.
+ * 문이 열리면(또는 자격 미달로 막히면) 선택은 비워집니다.
+ */
+export interface GateContext {
+  gate_id: string;
+  approval_request_id: string | null;
+  work_code: string | null;
+  required_headcount: number;
+  required_ppe: BundlePpe[];
+  selected_at: string | null;
+}
+
 /** 서버가 판정한 세션 상태. 젯슨은 이걸 그대로 화면에 반영합니다.
  *
  * `unlocking` 다음은 항상 `working` 입니다 — 팀 결정으로, 문이 열리면 곧

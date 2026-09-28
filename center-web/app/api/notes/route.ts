@@ -49,6 +49,8 @@ export async function GET(request: Request) {
 
   for (const doc of noteSnap.docs) {
     const n = doc.data();
+    // "특이사항 없음" 표시는 다음 사람에게 전할 내용이 아니라 여기 싣지 않습니다.
+    if (!String(n.note ?? "").trim()) continue;
     const session = sessionById.get(String(n.sessionId));
     // 세션이 지워졌으면 어느 장소 메모인지 알 수 없어 건너뜁니다.
     if (!session) continue;

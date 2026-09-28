@@ -43,6 +43,12 @@ export default async function KioskGatePickerPage() {
           </Link>
         ))}
       </div>
+
+      {/* 설치 담당자·팀장이 관제로 넘어가는 작은 입구. 작업자 화면(작업 선택 ·
+          진행)에는 두지 않습니다 — 현장 화면에서 로그인 화면으로 새어 나가면 안 됩니다. */}
+      <a href="/dashboard" className={styles.footLink}>
+        관제 화면으로 (로그인 필요) →
+      </a>
     </div>
   );
 }

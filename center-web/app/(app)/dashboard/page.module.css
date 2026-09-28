@@ -1,4 +1,4 @@
-/* W4 · 전체 현황 대시보드 — 상단 KPI 4칸, 하단 좌 표 / 우 이상 상황. */
+/* W4 · 전체 현황 — KPI 4칸 / 작업장 보드 / 좌 작업 목록 · 우 확인 필요. */
 
 .kpis {
   display: grid;
@@ -37,7 +37,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* 이상 상황 카드만 빨간 테두리 + 빨간 수치입니다.
+/* 확인 필요 카드만 빨간 테두리 + 빨간 수치입니다.
    Card 의 .card 가 box-shadow 를 이미 걸고 있고 그건 다른 CSS 모듈이라,
    클래스 하나짜리끼리는 파일 로드 순서로 승부가 갈립니다. 클래스를 두 번
    써서 특이성(0,2,0)으로 확실히 이기게 했습니다. */
@@ -51,6 +51,225 @@
   color: var(--red-50);
 }
 
+/* ── 머리 도구 (연결 표시 + 키오스크 입구) ──────────────────── */
+.headTools {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.kioskButton {
+  display: inline-flex;
+  align-items: center;
+  height: var(--ct-control-sm);
+  padding: 0 12px;
+  border-radius: var(--radius-8);
+  background: var(--ct-kiosk-surface);
+  color: var(--static-white);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.kioskButton:hover {
+  opacity: 0.88;
+}
+
+/* ── 작업장 보드 ─────────────────────────────────────────────── */
+/* 7곳이 고정 자리입니다. 넓으면 4칸, 좁아지면 저절로 줄어듭니다. */
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 148px;
+  padding: 16px;
+  border-radius: var(--radius-12);
+  background: var(--ct-page-bg);
+  /* 상태색은 왼쪽 띠로. 경계선은 border 가 아니라 inset shadow 라는 규칙입니다. */
+  box-shadow:
+    inset 0 0 0 1px var(--line-normal-alternative),
+    inset 4px 0 0 0 var(--tile-accent, transparent);
+}
+
+.tile_alert {
+  --tile-accent: var(--red-50);
+  background: var(--ct-surface);
+}
+
+.tile_working {
+  --tile-accent: var(--primary-normal);
+  background: var(--ct-surface);
+}
+
+.tile_waiting {
+  --tile-accent: var(--green-50);
+}
+
+/* 비어 있는 작업장은 한 톤 죽입니다 — 전부 같은 무게면 바쁜 곳이 안 보입니다. */
+.tile_idle {
+  opacity: 0.72;
+}
+
+.tileHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tileSite {
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 700;
+  color: var(--label-normal);
+  word-break: keep-all;
+}
+
+.tileState {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.state_alert {
+  background: var(--ct-tint-red);
+  color: var(--red-50);
+}
+
+.state_working {
+  background: var(--ct-tint-primary);
+  color: var(--primary-normal);
+}
+
+.state_waiting {
+  background: var(--ct-tint-green);
+  color: var(--green-50);
+}
+
+.state_idle {
+  background: var(--fill-normal-2);
+  color: var(--label-alternative);
+}
+
+.tileWork {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.tileWork:hover .tileWorkTitle {
+  text-decoration: underline;
+}
+
+.tileWorkTitle {
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--label-normal);
+}
+
+.tileMeta {
+  font-size: 12px;
+  color: var(--label-alternative);
+  font-variant-numeric: tabular-nums;
+}
+
+.tileEmpty {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--label-alternative);
+}
+
+.tileFoot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tileFootNote {
+  font-size: 12px;
+  color: var(--label-assistive);
+}
+
+.kioskLink {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-normal);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.kioskLink:hover {
+  text-decoration: underline;
+}
+
+/* ── 진행 막대 ───────────────────────────────────────────────── */
+.bar {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line-normal-alternative);
+  overflow: hidden;
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--primary-normal);
+}
+
+.barOver {
+  background: var(--orange-50);
+}
+
+/* ── 작업 목록 ───────────────────────────────────────────────── */
+.workCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.workTitle {
+  font-weight: 600;
+}
+
+/* 참여자·예정 시각. 경고가 아니라 사실 기록이라 보조색으로 둡니다. */
+.scheduleNote {
+  font-size: 12px;
+  line-height: 1.3;
+  letter-spacing: 0.025em;
+  color: var(--label-alternative);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.elapsedCell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
 /* 경과 시간이 예상을 넘기면 주의색 600 으로 바뀝니다. */
 .elapsed {
   font-variant-numeric: tabular-nums;
@@ -61,13 +280,31 @@
   font-weight: 600;
 }
 
-/* 이상 상황 항목. 경고와 차단이 배경·제목색으로만 구분됩니다. */
+.elapsedHint {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--label-assistive);
+}
+
+.tableHint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--label-assistive);
+}
+
+/* ── 확인 필요 ───────────────────────────────────────────────── */
 .anomaly {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 14px 16px;
+  gap: 3px;
+  padding: 12px 14px;
   border-radius: var(--radius-12);
+  color: inherit;
+  text-decoration: none;
+}
+
+.anomalyLink:hover {
+  filter: brightness(0.97);
 }
 
 .anomalyWarning {
@@ -78,11 +315,18 @@
   background: var(--ct-tint-red);
 }
 
+.anomalyTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .anomalyTitle {
   font-size: 14px;
   line-height: 1.429;
   letter-spacing: 0.015em;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .anomalyTitleWarning {
@@ -93,11 +337,36 @@
   color: var(--red-50);
 }
 
+.anomalyAt {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--label-alternative);
+  font-variant-numeric: tabular-nums;
+}
+
+.anomalySite {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--label-normal);
+}
+
 .anomalyDetail {
   font-size: 13px;
   line-height: 1.5;
   font-weight: 500;
   color: var(--label-neutral);
+}
+
+.moreButton {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-normal);
+  cursor: pointer;
 }
 
 .sectionTitle {
@@ -108,7 +377,7 @@
 }
 
 /* 관제 화면의 연결 표시. 끊기면 --red-50 으로 전환하고 마지막 갱신 시각을
-   띄우게 되어 있습니다 (프로토타입은 정상 상태만 있습니다). */
+   띄우게 되어 있습니다. */
 .link {
   display: flex;
   align-items: center;
@@ -127,6 +396,23 @@
   background: var(--green-50);
 }
 
+/* 연결이 끊기면 표시가 빨강으로 바뀝니다. 스펙의 "통신 끊김" 처리입니다. */
+.linkDown {
+  color: var(--red-50);
+}
+
+.linkDown .linkDot {
+  background: var(--red-50);
+}
+
+/* 확인할 일이 없을 때. 빈 패널을 그냥 두면 로딩 실패처럼 보입니다. */
+.calm {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: var(--label-assistive);
+}
+
 @media (max-width: 1023px) {
   .kpis {
     grid-template-columns: repeat(2, 1fr);
@@ -137,71 +423,8 @@
   .kpis {
     grid-template-columns: 1fr;
   }
-}
 
-/* 연결이 끊기면 표시가 빨강으로 바뀝니다. 스펙의 "통신 끊김" 처리입니다. */
-.linkDown {
-  color: var(--red-50);
-}
-
-.linkDown .linkDot {
-  background: var(--red-50);
-}
-
-/* 이상 상황이 없을 때. 빈 패널을 그냥 두면 로딩 실패처럼 보입니다. */
-.calm {
-  font-size: 14px;
-  line-height: 1.5;
-  font-weight: 500;
-  color: var(--label-assistive);
-}
-
-.workCell {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-/* 예정 시각 대비 기록. 경고가 아니라 사실 기록이라 보조색으로 둡니다. */
-.scheduleNote {
-  font-size: 12px;
-  line-height: 1.3;
-  letter-spacing: 0.025em;
-  color: var(--label-alternative);
-}
-
-/* 작업 제목 — 세션이 있으면 상세 페이지로 가는 링크입니다. */
-.workTitle {
-  color: inherit;
-  text-decoration: none;
-}
-
-a.workTitle:hover {
-  text-decoration: underline;
-}
-
-/* 행을 펼쳤을 때 나오는 요약. 여러 줄 InfoRow 를 가로로 늘어놓다가
-   좁아지면 접힙니다 — 표 자체가 768px 미만에서 카드형으로 바뀌는 것과 맞춥니다. */
-.expandGrid {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 28px;
-}
-
-.expandNote {
-  font-size: 13px;
-  color: var(--label-alternative);
-}
-
-.expandLink {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--primary-normal);
-  text-decoration: none;
-}
-
-.expandLink:hover {
-  text-decoration: underline;
+  .board {
+    grid-template-columns: 1fr;
+  }
 }

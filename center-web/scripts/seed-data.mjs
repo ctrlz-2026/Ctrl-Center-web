@@ -159,6 +159,9 @@ export const employees = [
     qualifications: [
       { code: "crane", expiresOn: "2028-02-14" },
       { code: "electric", expiresOn: "2027-10-01" },
+      // 밀폐공간 작업(E)은 3명이 필요합니다. 유효한 자격자가 셋은 있어야
+      // 시나리오에서 규칙을 어기지 않고 팀을 짤 수 있습니다.
+      { code: "confined", expiresOn: "2027-05-31" },
     ],
   },
   {
@@ -198,7 +201,7 @@ export const employees = [
   {
     empNo: "2023-0128", name: "박서준", team: "생산2팀", rank: "사원",
     role: "worker", hiredOn: "2023-01-28", completedCount: 51, active: true,
-    qualifications: [],
+    qualifications: [{ code: "confined", expiresOn: "2027-08-20" }],
   },
   {
     empNo: "2021-0619", name: "장현우", team: "전기팀", rank: "사원",

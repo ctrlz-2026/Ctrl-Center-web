@@ -11,7 +11,6 @@ import { cert, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import {
-  TEAM,
   employeeCards,
   employees,
   gates,
@@ -40,38 +39,12 @@ const emailOf = (empNo) => `${empNo}@center.local`;
  *  사번만 알면 첫 로그인이 되기 때문입니다.
  *  회원가입·비밀번호 변경 기능이 붙으면 이 규칙은 "초기 발급값"으로만 남습니다. */
 const initialPassword = (empNo) => `${empNo}1234`;
-const now = Date.now();
-const at = (minutesAgo) => new Date(now - minutesAgo * 60_000).toISOString();
 
-/* 승인 대기 요청. 승인자는 팀장(김병오)이므로 요청자에서 제외합니다 —
- * 본인이 올린 요청은 본인이 승인할 수 없기 때문입니다. */
-const approvalRequests = [
-  {
-    id: "req-seed-1", requesterId: TEAM.jeong, workCode: "A", siteId: "site-b2",
-    scheduledAt: at(-60),
-    reason: "정기 점검 주기 도래로 사다리 상단 고정부 확인이 필요합니다",
-    status: "pending", approverId: null, decidedAt: null, rejectReason: null,
-    createdAt: at(28),
-  },
-  {
-    id: "req-seed-2", requesterId: TEAM.park, workCode: "E", siteId: "site-c0",
-    scheduledAt: at(-120), reason: null,
-    status: "pending", approverId: null, decidedAt: null, rejectReason: null,
-    createdAt: at(46),
-  },
-  {
-    id: "req-seed-3", requesterId: "2017-0264", workCode: "J", siteId: "site-b2",
-    scheduledAt: at(-180), reason: "천장크레인 와이어 정기 점검",
-    status: "pending", approverId: null, decidedAt: null, rejectReason: null,
-    createdAt: at(74),
-  },
-  {
-    id: "req-seed-4", requesterId: "2022-0703", workCode: "B", siteId: "site-d5",
-    scheduledAt: at(-45), reason: null,
-    status: "pending", approverId: null, decidedAt: null, rejectReason: null,
-    createdAt: at(12),
-  },
-];
+/* 승인 요청은 **비어 있습니다** (2026-09-27). 오늘의 결재 대기·입장 대기는
+ * scripts/seed-scenario.mjs 가 "지금" 기준으로 만듭니다. 여기서 만들면 며칠 뒤
+ * 예정 시각이 지난 요청이 결재함에 남습니다. seed 를 돌린 뒤에는
+ * `npm run scenario` 를 같이 돌리세요. */
+const approvalRequests = [];
 
 async function seedCollection(name, docs, idKey) {
   const batch = db.batch();
@@ -86,6 +59,7 @@ async function seedCollection(name, docs, idKey) {
    seed 를 돌릴 때마다 A동 1층 라인2 시연 데이터가 날아가 매번 다시 심어야
    합니다. 지우는 건 seed-demo.mjs --clear 로 합니다. */
 const isDemoDoc = (id) => id.startsWith("demo-") || id.startsWith("req-demo-");
+/* (시나리오 문서도 같은 접두어를 씁니다 — seed 를 돌려도 오늘 시나리오는 남습니다.) */
 
 /** 시드에 없는 문서를 지웁니다.
  *  사람이 바뀌었는데 옛 문서가 남으면 관제 화면에 유령이 뜹니다. */

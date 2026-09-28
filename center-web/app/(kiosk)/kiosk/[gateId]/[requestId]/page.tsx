@@ -1,15 +1,16 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { loadKioskGate, loadKioskTask } from "@/lib/firebase/kiosk";
+import { notFound, redirect } from "next/navigation";
+import { loadKioskGate, loadKioskRequest, loadKioskTask } from "@/lib/firebase/kiosk";
 import { formatHeadcount } from "@/lib/rules";
+import { StartButton } from "./StartButton";
 import styles from "../../page.module.css";
 
-/* 작업 확인 화면 — 고른 작업이 맞는지 보고 인증으로 넘어가는 자리입니다.
+/* 작업 확인 화면 — 고른 작업이 맞는지 보고 입장을 시작하는 자리입니다.
  *
- * 여기까지가 웹이 만드는 부분입니다. 아래 "다음 단계" 칸부터는 젯슨이
- * 맡습니다 — 사원증 태그, 얼굴 1:1 매칭, PPE 착용 판정이 전부 기기에서
- * 돌아가고, 웹은 lib/gate-contract.ts 계약으로 결과만 받습니다.
- * 그래서 이 화면에는 카메라도 리더기도 붙어 있지 않습니다. */
+ * 「이 작업으로 입장 시작」을 누르면 서버가 이 게이트의 "지금 검증할 작업"을
+ * 적어 두고(젯슨이 이걸 읽습니다) 진행 화면으로 넘어갑니다. 사원증 태그 ·
+ * 얼굴 1:1 매칭 · PPE 판정은 젯슨이 하고, 웹은 lib/gate-contract.ts 계약으로
+ * 결과만 받습니다. */
 export const dynamic = "force-dynamic";
 
 export default async function KioskTaskDetailPage({
@@ -22,8 +23,12 @@ export default async function KioskTaskDetailPage({
   if (!gate) notFound();
 
   const task = await loadKioskTask(gate.siteId, requestId);
-  // 목록에서 빠진 작업(다른 사람이 먼저 시작했거나 승인이 취소됨)은 없는 페이지입니다.
-  if (!task) notFound();
+  if (!task) {
+    // 목록에서 빠진 건 이미 문이 열린 작업일 수 있습니다 — 그러면 진행 화면으로.
+    const opened = await loadKioskRequest(gate.siteId, requestId);
+    if (opened) redirect(`/kiosk/${gateId}/${requestId}/live`);
+    notFound();
+  }
 
   return (
     <div className={styles.wrap}>
@@ -69,39 +74,7 @@ export default async function KioskTaskDetailPage({
         ) : null}
       </div>
 
-      <div className={styles.next}>
-        <span className={styles.nextIcon} aria-hidden="true">
-          <svg width="44" height="44" viewBox="0 0 24 24" fill="none">
-            <rect
-              x="2.5"
-              y="5"
-              width="19"
-              height="14"
-              rx="2.5"
-              stroke="#8FB0FF"
-              strokeWidth="1.6"
-            />
-            <path d="M2.5 9.5h19" stroke="#8FB0FF" strokeWidth="1.6" />
-            <path
-              d="M6 14.5h4"
-              stroke="#8FB0FF"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-            />
-          </svg>
-        </span>
-        <span className={styles.nextTitle}>사원증을 대주세요</span>
-        <p className={styles.nextBody}>
-          여기부터는 기기가 확인합니다. 사원증을 읽고, 얼굴을 맞춰보고,
-          보호구를 갖췄는지 봅니다. 인원이 다 차면 문이 열려요.
-        </p>
-        <div className={styles.steps}>
-          <span className={styles.step}>1 사원증 태그</span>
-          <span className={styles.step}>2 얼굴 확인</span>
-          <span className={styles.step}>3 보호구 확인</span>
-          <span className={styles.step}>4 문 열림</span>
-        </div>
-      </div>
+      <StartButton gateId={gateId} requestId={requestId} />
 
       <div className={styles.actions}>
         <Link href={`/kiosk/${gateId}`} className={styles.back}>

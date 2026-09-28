@@ -218,11 +218,48 @@ export interface User {
   qualifications: Qualification[];
 }
 
+/** 작업 한 건의 특이사항 상태. 이력이 쌓여도 "무엇을 아직 안 썼는지"가 보이게
+ *  하려고 나눴습니다.
+ *
+ *  - `written`  내용을 남김
+ *  - `none`     **"특이사항 없음"으로 직접 표시함** — 남길 말이 없는 작업도
+ *               흔한데, 그걸 "아직 안 쓴 것"과 섞으면 목록이 영원히 안 줄어듭니다
+ *  - `todo`     끝났는데 아직 아무것도 안 함 (최근 7일)
+ *  - `lapsed`   7일이 지나도록 아무것도 안 함 — 이제 와서 쓰라고 조르지 않고
+ *               "작성 안 함"으로 접어 둡니다. 원하면 지금도 쓸 수 있습니다
+ *  - `open`     아직 진행중인 작업 (작업 중에도 쓸 수 있습니다) */
+export type NoteState = "written" | "none" | "todo" | "lapsed" | "open";
+
+/** "작성 안 함"으로 넘어가기까지의 기한. 기억이 생생할 때 쓰라는 기간입니다. */
+export const NOTE_DUE_DAYS = 7;
+
+export const NOTE_STATE_LABEL: Record<NoteState, string> = {
+  written: "작성함",
+  none: "특이사항 없음",
+  todo: "작성 필요",
+  lapsed: "작성 안 함",
+  open: "진행중",
+};
+
+export const NOTE_STATE_TONE: Record<NoteState, StatusTone> = {
+  written: "success",
+  none: "neutral",
+  todo: "warning",
+  lapsed: "neutral",
+  open: "active",
+};
+
 export interface WorkHistory {
   id: string;
   /** 끝난 작업인지. 스펙상 특이사항은 작업 중에도 쓸 수 있어 진행중 작업도
    *  이 목록에 나옵니다 — 대신 소요시간·검증결과가 아직 없습니다. */
   closed: boolean;
+  /** 특이사항 상태. 위 NoteState 설명 참고. */
+  noteState: NoteState;
+  /** 마지막으로 특이사항을 저장(또는 "없음" 표시)한 때. 사람이 읽는 형식입니다. */
+  noteSavedLabel?: string;
+  /** 정렬용 시작 시각 ISO. */
+  startedAt: string;
   when: string;
   code: string;
   title: string;
@@ -313,40 +350,76 @@ export const SITE_STATUS_ACCENT: Record<SiteStatusState, string | undefined> = {
   blocked: "var(--red-50)",
 };
 
+/** 관제 표의 작업 한 줄.
+ *
+ *  **제어 버튼이 없습니다** (2026-09-27). 예전엔 젯슨 대역으로 여기서 「임시
+ *  문열림」「업무 종료」「확인 처리」를 눌렀는데, 게이트 기기 인증이 들어가면서
+ *  현장 진행은 **키오스크가 맡는 것**으로 옮겼습니다. 관제는 보는 화면이고,
+ *  문을 여닫는 건 문 앞에서 합니다. */
 export interface SiteStatus {
   /** 표의 행 키. 같은 작업장에 승인 대기와 진행중이 동시에 있을 수 있어
    *  작업장+작업명 조합으로는 유일하지 않습니다. */
   id: string;
+  siteId: string;
   site: string;
+  /** 이 작업장의 게이트. 키오스크 화면으로 이어주는 링크에 씁니다. */
+  gateId: string | null;
   state: SiteStatusState;
   elapsed: string;
   /** 예상 소요시간을 넘겼는지. 넘기면 경과를 orange-50 600 으로 표기합니다.
    *  작업 "예정 시각"과는 다른 값입니다 — 이쪽은 얼마나 걸리느냐입니다. */
   overtime: boolean;
+  /** 경과 / 예상시간. 1 을 넘으면 초과입니다. 진행 막대에 씁니다. */
+  progress: number | null;
   headcount: string;
   work: string;
-  /** 젯슨이 없는 동안 웹에서 수동으로 진행시키기 위한 버튼.
-   *  문 열림은 곧 작업 시작이라 별도 "start" 단계는 없습니다.
-   *  젯슨이 붙으면 이 필드는 null 이 되고 기기가 상태를 밀어 올립니다.
-   *
-   *  `dismiss` 는 차단된 세션을 표에서 내립니다. 차단은 시간이 지나도 저절로
-   *  사라지지 않습니다 — 누군가 현장을 확인했다는 사실이 있어야 내려가는 것이라
-   *  지우는 것도 사람이 눌러야 합니다. */
-  control: "unlock" | "end" | "dismiss" | null;
-  /** 수동 제어에 필요한 참조. */
+  /** 참여 인원 이름. 진행중 작업만 있습니다. */
+  members: string[];
   requestId?: string;
   sessionId?: string;
-  /** 시연용으로 만든 행인지 (scripts/seed-demo.mjs).
-   *  방치 세션 자동 종료에서 빠집니다 — 시연 도중 행이 저절로 사라지면 안 되니까요.
-   *  화면에는 따로 표시하지 않습니다. 심사 시연에서 "이건 가짜"라고 광고할
-   *  이유가 없고, 표시를 달면 작업장 칸이 밀려 이름이 잘립니다. */
-  demo?: boolean;
   /** 예정 시각 대비 언제 시작했는지. 진입을 막지는 않고 기록만 남깁니다. */
   scheduleNote?: string;
+  /** 승인됐지만 아직 시작 안 한 작업의 예정 시각 (HH:mm). */
+  scheduledLabel?: string;
   /** 실제 시작 시각 (HH:mm). 세션이 생긴 것만 있습니다. */
   startedAtLabel?: string;
   /** 시작 시각 + 예상 소요시간 (HH:mm). 작업코드에 예상시간이 없으면 없습니다. */
   expectedEndLabel?: string;
+}
+
+/** 작업장 보드의 칸 하나. 관제 화면 맨 위에서 **작업장 7곳을 한눈에** 봅니다.
+ *
+ *  표만 있을 때는 "지금 어디가 비어 있고 어디가 바쁜지"를 알려면 행을 다 읽어야
+ *  했습니다. 작업장은 고정된 7곳이라, 자리를 고정해 두면 위치만 보고도 압니다. */
+export type SiteBoardState = "alert" | "working" | "waiting" | "idle";
+
+export const SITE_BOARD_LABEL: Record<SiteBoardState, string> = {
+  alert: "확인 필요",
+  working: "작업중",
+  waiting: "입장 대기",
+  idle: "비어 있음",
+};
+
+export interface SiteBoardTile {
+  siteId: string;
+  siteName: string;
+  gateId: string | null;
+  state: SiteBoardState;
+  /** 진행중 작업. 보통 0~1건이지만 한 작업장에 둘이 겹칠 수도 있습니다. */
+  working: {
+    sessionId: string;
+    work: string;
+    headcount: string;
+    elapsed: string;
+    progress: number | null;
+    overtime: boolean;
+  }[];
+  /** 승인됐는데 아직 안 들어간 작업 수 (오늘). */
+  waitingCount: number;
+  /** 가장 빠른 대기 작업의 예정 시각. */
+  nextLabel?: string;
+  /** 이 작업장에 걸린 확인 필요 건수. */
+  alertCount: number;
 }
 
 /** 작업장별 특이사항. 마이페이지가 "내가 쓴 것"이라면 이쪽은 "여기서 나온 것"입니다
@@ -375,4 +448,10 @@ export interface Anomaly {
   kind: "warning" | "blocked";
   title: string;
   detail: string;
+  siteId: string;
+  siteName: string;
+  /** 언제 생긴 일인지 (HH:mm). 차단은 시각이 중요합니다. */
+  atLabel?: string;
+  /** 누르면 갈 곳. 진행중 작업이면 세션 상세입니다. */
+  sessionId?: string;
 }

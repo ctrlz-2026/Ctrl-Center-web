@@ -58,11 +58,6 @@ interface RequestsContextValue {
     reason?: string,
     note?: string,
   ) => Promise<void>;
-  /** 젯슨이 없는 동안 웹에서 게이트를 진행시킵니다. 기기가 붙으면 사라질 기능입니다. */
-  gateControl: (
-    action: "unlock" | "end" | "dismiss",
-    ref: { requestId?: string; sessionId?: string },
-  ) => Promise<void>;
 }
 
 const RequestsContext = createContext<RequestsContextValue | null>(null);
@@ -151,25 +146,6 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const gateControl = useCallback(
-    async (
-      action: "unlock" | "end" | "dismiss",
-      ref: { requestId?: string; sessionId?: string },
-    ) => {
-      const res = await fetch("/api/gate/manual", {
-        method: "POST",
-        headers: await authHeaders(),
-        body: JSON.stringify({ action, ...ref }),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as { error?: string } | null;
-        setError(body?.error ?? "게이트를 제어하지 못했어요.");
-      }
-      // 갱신은 스트림이 밀어줍니다 (gateSessions 도 구독 중입니다).
-    },
-    [],
-  );
-
   const value = useMemo<RequestsContextValue>(() => {
     const pendingCount = requests.filter((r) => r.status === "pending").length;
     const myLatest =
@@ -187,9 +163,8 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
       myLatest,
       submit,
       decide,
-      gateControl,
     };
-  }, [requests, workCodes, sites, dashboard, loading, error, status, lastUpdatedAt, user, submit, decide, gateControl]);
+  }, [requests, workCodes, sites, dashboard, loading, error, status, lastUpdatedAt, user, submit, decide]);
 
   return (
     <RequestsContext.Provider value={value}>

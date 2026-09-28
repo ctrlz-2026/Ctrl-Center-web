@@ -11,52 +11,13 @@ import { TEAM } from "./seed-data.mjs";
 const iso = (minutesAgo) =>
   new Date(Date.now() - minutesAgo * 60_000).toISOString();
 
-/** 지금 현장에서 돌아가고 있는 작업들. 여러 팀이 동시에 움직이는 그림입니다. */
+/** 지금 현장에서 돌아가고 있는 작업들.
+ *
+ *  **비어 있습니다** (2026-09-27). "오늘" 은 scripts/seed-scenario.mjs 가
+ *  통째로 맡습니다 — 두 곳에서 진행중 작업을 만들면 한 사람이 두 작업장에
+ *  동시에 들어가 있는 그림이 생깁니다. */
 export function liveSessions() {
-  return [
-    {
-      id: "live-1", siteId: "site-b2", gateId: "gate-b2", workCode: "A",
-      state: "working",
-      startedAt: iso(43), endedAt: null,
-      members: [TEAM.jeong, "2022-0703"], enteredCount: 2,
-    },
-    {
-      id: "live-2", siteId: "site-a1", gateId: "gate-a1", workCode: "D",
-      state: "working",
-      // 예상 60분인데 81분째 — 초과 경고가 뜨는 케이스입니다.
-      startedAt: iso(81), endedAt: null,
-      members: ["2014-0132", "2023-0128"], enteredCount: 2,
-    },
-    {
-      id: "live-3", siteId: "site-f0", gateId: "gate-f0", workCode: "F",
-      state: "working",
-      startedAt: iso(17), endedAt: null,
-      members: ["2013-0055", "2021-0619"], enteredCount: 2,
-    },
-    // D동 옥상은 일부러 비워둡니다 — 승인 → 임시 문열림 → 작업 시작 흐름을
-    // 시연할 때 기존 행과 겹치지 않아야 무엇이 새로 생겼는지 한눈에 보입니다.
-    {
-      id: "live-5", siteId: "site-a3", gateId: "gate-a3", workCode: "H",
-      state: "tagging",
-      startedAt: iso(1), endedAt: null,
-      members: ["2017-0264"], enteredCount: 0,
-    },
-    {
-      id: "live-6", siteId: "site-c0", gateId: "gate-c0", workCode: "E",
-      state: "blocked",
-      startedAt: iso(6), endedAt: null,
-      members: [TEAM.park], enteredCount: 0,
-      // 박상하의 밀폐공간 자격이 만료 → 검증 진입 전에 차단
-      blockedReason: "밀폐공간 작업 자격 만료",
-    },
-    {
-      id: "live-7", siteId: "site-e1", gateId: "gate-e1", workCode: "G",
-      state: "blocked",
-      startedAt: iso(12), endedAt: null,
-      members: ["2019-0417"], enteredCount: 0,
-      blockedReason: "유해화학물질 취급 자격 만료",
-    },
-  ];
+  return [];
 }
 
 /** 끝난 작업 = 이력. 최근 것부터 과거로. */

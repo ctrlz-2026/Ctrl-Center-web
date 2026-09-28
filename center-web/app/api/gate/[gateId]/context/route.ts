@@ -1,0 +1,59 @@
+import { NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebase/admin";
+import { isResponse, requireGate } from "@/lib/firebase/gate-auth";
+import { loadMasters } from "@/lib/firebase/queries";
+import type { GateContext } from "@/lib/gate-contract";
+
+/* 젯슨이 "지금 이 문 앞에서 어느 작업을 검증하나"를 묻는 곳.
+ *
+ *   GET /api/gate/gate-a1/context
+ *   헤더: X-Gate-Key: <그 게이트의 기기 키>
+ *
+ * 키오스크에서 작업을 고르면 서버가 게이트별로 적어 둡니다
+ * (POST /api/kiosk/{gateId}/select). 젯슨은 이걸 읽어 검증을 시작하고,
+ * 이벤트를 보낼 때 approval_request_id 로 그대로 돌려줍니다.
+ *
+ * 아무 작업도 안 골랐으면 approval_request_id 가 null 입니다 — 오류가 아니라
+ * "대기 화면"이라는 뜻입니다.
+ *
+ * 상하 님 로컬에 같은 역할의 경로가 있다고 들었습니다(2026-09-27 기준 미반영).
+ * 합칠 때는 응답 모양(GateContext)만 맞추면 어느 쪽 구현을 남겨도 됩니다. */
+
+export const dynamic = "force-dynamic";
+
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ gateId: string }> },
+) {
+  const { gateId } = await params;
+  const gate = await requireGate(request, gateId);
+  if (isResponse(gate)) return gate;
+
+  const doc = await adminDb().collection("kioskContexts").doc(gateId).get();
+  const empty: GateContext = {
+    gate_id: gateId,
+    approval_request_id: null,
+    work_code: null,
+    required_headcount: 0,
+    required_ppe: [],
+    selected_at: null,
+  };
+  if (!doc.exists) return NextResponse.json(empty, { headers: { "Cache-Control": "no-store" } });
+
+  const c = doc.data()!;
+  const masters = await loadMasters();
+  const wc = masters.workCodes.get(String(c.workCode));
+  const body: GateContext = {
+    gate_id: gateId,
+    approval_request_id: String(c.approvalRequestId),
+    work_code: String(c.workCode),
+    required_headcount: Number(wc?.requiredHeadcount ?? 0),
+    required_ppe: (wc?.requiredPpe ?? []).map((p: string) => ({
+      code: p,
+      name: masters.ppeNames.get(p) ?? p,
+      yolo_class: masters.ppeYolo.get(p) ?? null,
+    })),
+    selected_at: String(c.selectedAt),
+  };
+  return NextResponse.json(body, { headers: { "Cache-Control": "no-store" } });
+}

@@ -4,6 +4,7 @@ import { isResponse, requireCaller } from "@/lib/firebase/auth-guard";
 import { emailOf, initialPassword } from "@/lib/firebase/user";
 import { canManageAccounts } from "@/lib/types";
 import type { Role } from "@/lib/types";
+import { invalidateMasters } from "@/lib/firebase/queries";
 
 /* 계정 관리 — 비밀번호 초기화 · 역할 변경 · 활성/비활성.
  *
@@ -95,6 +96,7 @@ export async function PATCH(
     } catch {
       // 로그인 계정이 없는 가상 인물이면 Firestore 만 바뀝니다.
     }
+    invalidateMasters(); // 마스터 캐시를 비워 바로 반영
     return NextResponse.json({ ok: true, role });
   }
 
@@ -118,6 +120,7 @@ export async function PATCH(
     } catch {
       // 로그인 계정이 없는 가상 인물이면 Firestore 만 바뀝니다.
     }
+    invalidateMasters(); // 마스터 캐시를 비워 바로 반영
     return NextResponse.json({ ok: true, active });
   }
 

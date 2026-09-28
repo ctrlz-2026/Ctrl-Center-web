@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { isResponse, requireCaller } from "@/lib/firebase/auth-guard";
-import { loadMasters } from "@/lib/firebase/queries";
+import { loadMasters, invalidateMasters } from "@/lib/firebase/queries";
 import { canManageAccounts } from "@/lib/types";
 import type { AccountProfile, AccountProfileOptions } from "@/lib/types";
 
@@ -235,5 +235,6 @@ export async function PUT(
     }
   }
 
+  invalidateMasters(); // 마스터 캐시를 비워 바로 반영
   return NextResponse.json({ ok: true });
 }

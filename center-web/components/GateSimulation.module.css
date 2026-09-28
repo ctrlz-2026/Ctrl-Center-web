@@ -1,0 +1,41 @@
+/* 게이트 시뮬레이션 자리. 천호 님 화면이 오면 통째로 바뀝니다. */
+
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border-radius: var(--radius-12);
+  background: var(--ct-page-bg);
+  box-shadow: var(--line-inset-normal);
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--label-normal);
+}
+
+.body {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--label-alternative);
+}
+
+.props {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 16px;
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--label-alternative);
+}
+
+.props dt {
+  font-weight: 600;
+}
+
+.props dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}

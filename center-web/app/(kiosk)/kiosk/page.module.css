@@ -346,9 +346,322 @@
   background: rgba(255, 255, 255, 0.16);
 }
 
+/* ── 구역 (지금 작업 중 / 들어갈 작업) ─────────────────────── */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sectionLabel {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* 작업 중 카드는 초록 기운으로 — 들어갈 작업(파랑)과 한눈에 갈라집니다. */
+.cardWorking {
+  background: rgba(0, 191, 64, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(0, 191, 64, 0.35);
+}
+
+.codeWorking {
+  background: rgb(0, 133, 71);
+}
+
+.cardAction {
+  flex: none;
+  padding: 10px 16px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.overtime {
+  color: rgb(255, 176, 64);
+  font-weight: 700;
+}
+
+/* ── 큰 버튼 ────────────────────────────────────────────────── */
+/* 장갑 낀 손으로 누르는 버튼이라 높이 80 이상. */
+.startWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.primary,
+.secondary {
+  width: 100%;
+  min-height: 80px;
+  border: 0;
+  border-radius: var(--radius-14);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--static-white);
+  cursor: pointer;
+}
+
+.primary {
+  background: var(--primary-normal);
+}
+
+.secondary {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.primary:active,
+.secondary:active {
+  filter: brightness(1.15);
+}
+
+.primary:disabled,
+.secondary:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.error {
+  font-size: 17px;
+  line-height: 1.5;
+  color: rgb(255, 138, 132);
+  text-align: center;
+}
+
+/* ── 진행 단계 ──────────────────────────────────────────────── */
+.progress {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.progressStep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-12);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 17px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.progressDot {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 15px;
+}
+
+.progressDone {
+  color: var(--static-white);
+  background: rgba(51, 102, 255, 0.2);
+}
+
+.progressDone .progressDot {
+  background: var(--primary-normal);
+}
+
+.progressFail {
+  background: rgba(255, 58, 51, 0.22);
+}
+
+.progressFail .progressDot {
+  background: var(--red-50);
+}
+
+/* ── 단계 카드 ──────────────────────────────────────────────── */
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 28px;
+  border-radius: var(--radius-16);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.12);
+  text-align: center;
+}
+
+.stageBlocked {
+  background: rgba(255, 58, 51, 0.12);
+  box-shadow: inset 0 0 0 2px rgba(255, 58, 51, 0.55);
+}
+
+.stageWorking {
+  background: rgba(0, 191, 64, 0.08);
+  box-shadow: inset 0 0 0 2px rgba(0, 191, 64, 0.45);
+}
+
+.stageClosed {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.stageIcon {
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: rgba(51, 102, 255, 0.2);
+}
+
+.stageTitle {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.stageBody {
+  max-width: 560px;
+  font-size: 19px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.stageBody strong {
+  color: var(--static-white);
+}
+
+.stageWarn {
+  font-size: 16px;
+  color: rgb(255, 196, 110);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 10px;
+  border-radius: var(--radius-12);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.statValue {
+  font-size: 30px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.statLabel {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.confirmRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ── 시연 모드 (젯슨 대역) ──────────────────────────────────── */
+/* 진짜 화면과 섞이면 안 되므로 점선 틀로 "여긴 임시"임을 드러냅니다. */
+.sim {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border-radius: var(--radius-14);
+  box-shadow: inset 0 0 0 2px rgba(255, 196, 110, 0.4);
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 196, 110, 0.05) 0 12px,
+    transparent 12px 24px
+  );
+}
+
+.simLabel {
+  font-size: 15px;
+  font-weight: 700;
+  color: rgb(255, 196, 110);
+}
+
+.simRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.simPass,
+.simBlock {
+  min-height: 60px;
+  border: 0;
+  border-radius: var(--radius-12);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--static-white);
+  cursor: pointer;
+}
+
+.simPass {
+  background: rgb(0, 133, 71);
+}
+
+.simBlock {
+  background: rgb(200, 45, 40);
+}
+
+.simPass:disabled,
+.simBlock:disabled {
+  opacity: 0.55;
+}
+
+.simHint {
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* ── 관제로 가는 작은 입구 (게이트 선택 화면에만) ──────────── */
+.footLink {
+  align-self: center;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.45);
+  text-decoration: none;
+}
+
+.footLink:hover {
+  color: rgba(255, 255, 255, 0.75);
+}
+
 @media (max-width: 599px) {
   .title {
     font-size: 30px;
+  }
+
+  .progress {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stats,
+  .simRow {
+    grid-template-columns: 1fr;
   }
 
   /* 좁은 화면에서는 한 줄에 하나. 정사각형을 고집하면 타일이 화면을 다

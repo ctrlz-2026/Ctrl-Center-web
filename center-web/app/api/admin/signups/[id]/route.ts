@@ -3,6 +3,7 @@ import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { isResponse, requireCaller } from "@/lib/firebase/auth-guard";
 import { emailOf, initialPassword } from "@/lib/firebase/user";
 import { canManageAccounts } from "@/lib/types";
+import { invalidateMasters } from "@/lib/firebase/queries";
 
 /* 가입 신청 승인 · 거절.
  *
@@ -124,5 +125,6 @@ export async function POST(
     rejectReason: null,
   });
 
+  invalidateMasters(); // 마스터 캐시를 비워 바로 반영
   return NextResponse.json({ ok: true, status: "approved", empNo });
 }

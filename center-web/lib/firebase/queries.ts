@@ -20,7 +20,35 @@ interface Masters {
   qualNames: Map<string, string>;
 }
 
+/* ── 마스터 캐시 ──────────────────────────────────────────────────────────
+ * 마스터는 거의 안 바뀌는데 거의 모든 경로가 읽습니다. 매 요청 통째로 읽었더니
+ * 키오스크 진행 화면(몇 초마다 상태 조회)을 밤새 열어둔 것만으로 Firestore 무료
+ * 일일 읽기 한도(5만 건)를 넘겨 **배포 사이트까지 멈췄습니다** (2026-09-28).
+ *
+ * 그래서 서버 메모리에 잠깐 들고 있습니다. 관리자가 자격·배정을 고치면 최대
+ * 이 시간만큼 늦게 반영됩니다 — 그 대신 같은 서버에서 고친 건 바로 비웁니다
+ * (invalidateMasters). */
+const MASTERS_TTL_MS = 60_000;
+let mastersCache: { at: number; value: Promise<Masters> } | null = null;
+
+export function invalidateMasters() {
+  mastersCache = null;
+}
+
 export async function loadMasters(): Promise<Masters> {
+  if (mastersCache && Date.now() - mastersCache.at < MASTERS_TTL_MS) {
+    return mastersCache.value;
+  }
+  const value = readMasters();
+  mastersCache = { at: Date.now(), value };
+  // 실패한 읽기를 캐시에 남기면 1분 내내 오류가 납니다.
+  value.catch(() => {
+    if (mastersCache?.value === value) mastersCache = null;
+  });
+  return value;
+}
+
+async function readMasters(): Promise<Masters> {
   const db = adminDb();
   const [wc, emp, site, ppe, qual] = await Promise.all([
     db.collection("workCodes").get(),

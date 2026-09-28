@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:demo": "node --env-file=.env.local scripts/seed-demo.mjs",
-    "seed:demo:clear": "node --env-file=.env.local scripts/seed-demo.mjs --clear"
+    "scenario": "node --env-file=.env.local scripts/seed-scenario.mjs",
+    "scenario:clear": "node --env-file=.env.local scripts/seed-scenario.mjs --clear"
   },
   "dependencies": {
     "firebase": "^12.18.0",
