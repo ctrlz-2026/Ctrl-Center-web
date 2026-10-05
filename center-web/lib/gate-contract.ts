@@ -132,6 +132,7 @@ export interface GateStateResponse {
     | "tagging"
     | "face"
     | "verifying"
+    | "blocked"
     | "unlocking"
     | "working"
     | "closed";
