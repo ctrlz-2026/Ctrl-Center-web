@@ -103,7 +103,13 @@ export default async function KioskTaskListPage({
                     {t.requesterName} {t.requesterRank} ·{" "}
                     {formatHeadcount(t.headcount)}
                   </span>
-                  {t.scheduledAt ? <span>{t.scheduledAt} 예정</span> : null}
+                  {/* 오늘이 아닌 작업도 목록에서 빼지 않습니다 — 예정 시각은 진입을
+                      막지 않습니다. 대신 날짜를 붙여 다른 날 작업임을 드러냅니다. */}
+                  {t.scheduledAt ? (
+                    <span className={t.scheduledOtherDay ? styles.otherDay : undefined}>
+                      {t.scheduledAt} 예정
+                    </span>
+                  ) : null}
                 </span>
               </Link>
             ))}

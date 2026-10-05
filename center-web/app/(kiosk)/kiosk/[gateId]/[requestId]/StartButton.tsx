@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { unlockSound } from "@/lib/kiosk-sound";
 import styles from "../../page.module.css";
 
 /** 「이 작업으로 입장 시작」. 서버에 선택을 적고 진행 화면으로 넘어갑니다. */
@@ -20,6 +21,9 @@ export function StartButton({
     if (busy) return;
     setBusy(true);
     setError(null);
+    // 이 누름이 브라우저의 소리 잠금을 풉니다. 진행 화면의 통과·차단 알림음이
+    // 이 한 번의 터치 덕에 따로 켜지 않아도 납니다.
+    void unlockSound();
     const res = await fetch(`/api/kiosk/${gateId}/select`, {
       method: "POST",
       headers: { "content-type": "application/json" },

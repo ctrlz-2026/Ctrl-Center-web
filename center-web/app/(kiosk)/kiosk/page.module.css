@@ -384,6 +384,12 @@
   font-weight: 700;
 }
 
+/* 예정 날짜가 오늘이 아닌 작업. 막지는 않되 눈에 띄게 합니다. */
+.otherDay {
+  color: rgb(255, 196, 110);
+  font-weight: 600;
+}
+
 /* ── 큰 버튼 ────────────────────────────────────────────────── */
 /* 장갑 낀 손으로 누르는 버튼이라 높이 80 이상. */
 .startWrap {
@@ -636,6 +642,19 @@
   font-size: 14px;
   line-height: 1.5;
   color: rgba(255, 255, 255, 0.55);
+}
+
+/* 알림음이 막혀 있을 때만 뜨는 버튼. */
+.soundButton {
+  min-height: 60px;
+  border: 0;
+  border-radius: var(--radius-12);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 /* ── 관제로 가는 작은 입구 (게이트 선택 화면에만) ──────────── */

@@ -2,13 +2,9 @@ import "server-only";
 
 import { adminDb } from "./admin";
 import { seoulDate } from "./bundle";
-import {
-  elapsedLabel,
-  isWaitingToday,
-  startedRequestIdsOf,
-} from "./dashboard";
+import { elapsedLabel, startedRequestIdsOf } from "./dashboard";
 import { loadMasters } from "./queries";
-import type { KioskStatus } from "@/lib/kiosk-types";
+import type { KioskSignal, KioskStatus } from "@/lib/kiosk-types";
 
 /* 키오스크(터치패드) 화면 데이터.
  *
@@ -38,8 +34,14 @@ export interface KioskTask {
   /** 팀장이 승인하며 남긴 당부. 현장에서 읽으라고 쓴 말이라 카드에 그대로 띄웁니다. */
   approveNote?: string;
   approverName?: string;
-  /** 작업 예정 시각 (HH:mm). 없으면 지정 안 한 요청입니다. */
+  /** 작업 예정 시각. 오늘이면 "14:30", 다른 날이면 "10/6 14:30".
+   *  **날짜가 지났어도 목록에서 빼지 않습니다** — 예정 시각은 진입을 막는 값이
+   *  아니라 기록용이라, 늦게 와도 들어갈 수 있어야 합니다. */
   scheduledAt?: string;
+  /** 오늘이 아닌 작업인지. 화면에서 눈에 띄게 표시하려고 따로 둡니다. */
+  scheduledOtherDay?: boolean;
+  /** 정렬용 ISO 값. 화면에 쓰지 않습니다. */
+  scheduledSortKey?: string;
 }
 
 /** 이 게이트에서 지금 작업 중인 것. 작업 선택 화면 위에 따로 보여줍니다 —
@@ -58,6 +60,13 @@ const hhmm = new Intl.DateTimeFormat("ko-KR", {
   hour: "2-digit",
   minute: "2-digit",
   hour12: false,
+  timeZone: "Asia/Seoul",
+});
+
+/** "10/6" — 오늘이 아닌 작업에만 붙입니다. */
+const md = new Intl.DateTimeFormat("ko-KR", {
+  month: "numeric",
+  day: "numeric",
   timeZone: "Asia/Seoul",
 });
 
@@ -117,18 +126,43 @@ function toTask(
     approverName: r.approverId
       ? (masters.employees.get(String(r.approverId))?.name ?? undefined)
       : undefined,
-    scheduledAt: r.scheduledAt ? hhmm.format(new Date(r.scheduledAt)) : undefined,
+    ...scheduleLabel(r.scheduledAt),
+  };
+}
+
+/** 예정 시각 표기. 오늘이 아니면 날짜를 앞에 붙여 **다른 날 작업임을 숨기지
+ *  않습니다** — 목록에서 빼지 않는 대신, 보는 사람이 알아채게 합니다. */
+function scheduleLabel(raw: unknown): Partial<KioskTask> {
+  if (!raw) return {};
+  const at = new Date(String(raw));
+  if (Number.isNaN(at.getTime())) return {};
+  const otherDay = seoulDate(at) !== seoulDate();
+  return {
+    scheduledAt: otherDay ? `${md.format(at)} ${hhmm.format(at)}` : hhmm.format(at),
+    scheduledOtherDay: otherDay,
+    scheduledSortKey: at.toISOString(),
   };
 }
 
 /** 이 게이트에 띄울 작업들.
  *
- *  **승인된 오늘 작업만** 올라옵니다. 승인이 곧 게이트 노출 조건이라, 신청만
- *  하고 결재가 안 난 작업은 키오스크에 아예 보이지 않습니다.
+ *  **승인된 작업만** 올라옵니다. 승인이 곧 게이트 노출 조건이라, 신청만 하고
+ *  결재가 안 난 작업은 키오스크에 아예 보이지 않습니다.
  *
  *  이미 문이 열린 요청은 뺍니다 — 남아 있으면 같은 작업으로 두 번 들어갑니다.
  *  **차단만 된 요청은 남깁니다.** 막힌 사람이 보호구를 갖추고 다시 와야 하는데
- *  목록에서 사라지면 다시 시도할 길이 없습니다. */
+ *  목록에서 사라지면 다시 시도할 길이 없습니다.
+ *
+ *  ── 예정 날짜로 거르지 않습니다 (2026-10-05 수정) ──────────────────────
+ *  한때 "오늘 예정분만" 띄웠는데, 팀장이 승인한 작업이 키오스크에 안 뜨는
+ *  일이 생겼습니다. 「출입 및 인원관리 로직」은 **예정 시각이 진입을 막지
+ *  않는다**고 못박고 있습니다 — 늦게 와도 일찍 와도 통과시키고 기록만 남기는
+ *  것이 규칙인데, 목록에서 빼버리면 아예 시도조차 못 합니다.
+ *  날짜가 다른 작업은 **빼는 대신 날짜를 적어** 띄웁니다. 자정을 넘겨 하는
+ *  작업, 전날 승인받고 아침에 들어가는 작업이 모두 여기 걸립니다.
+ *
+ *  관제 화면의 "입장 대기" 숫자는 그대로 오늘 기준입니다 — 그쪽은 오늘
+ *  처리량을 세는 지표라 날짜로 묶는 게 맞습니다. */
 export async function loadKioskTasks(siteId: string): Promise<KioskTask[]> {
   const db = adminDb();
   const [masters, reqSnap, sessionSnap] = await Promise.all([
@@ -140,12 +174,14 @@ export async function loadKioskTasks(siteId: string): Promise<KioskTask[]> {
   const started = startedRequestIdsOf(
     sessionSnap.docs.map((d) => d.data() as { state: string; approvalRequestId?: string }),
   );
-  const today = seoulDate();
 
   return reqSnap.docs
-    .filter((d) => isWaitingToday(d.data(), started, d.id, today))
+    .filter((d) => d.data().status === "approved" && !started.has(d.id))
     .map((d) => toTask(d.id, d.data(), masters))
-    .sort((a, b) => (a.scheduledAt ?? "").localeCompare(b.scheduledAt ?? ""));
+    // 예정이 이른 것부터. 예정 시각이 없는 요청은 뒤로 보냅니다.
+    .sort((a, b) =>
+      (a.scheduledSortKey ?? "9999").localeCompare(b.scheduledSortKey ?? "9999"),
+    );
 }
 
 export async function loadKioskTask(
@@ -246,14 +282,35 @@ export async function loadKioskStatus(
     entered: Number(s.enteredCount ?? 0),
     members: (s.members ?? []).map(nameOf),
     selected,
+    // 젯슨 판정 세션에만 있는 값들. 키오스크 시연 세션에는 없습니다.
+    message: s.message ? String(s.message) : undefined,
+    tagged: s.headcount ? Number(s.headcount.tagged ?? 0) : undefined,
+    verified: s.headcount ? Number(s.headcount.verified ?? 0) : undefined,
+    signal: s.lastSignal?.at
+      ? { kind: s.lastSignal.kind as KioskSignal, at: String(s.lastSignal.at) }
+      : undefined,
   };
+
+  /* 막힌 시각. 젯슨 세션은 문서 하나를 계속 쓰므로 startedAt(처음 검증을 시작한
+   * 때)이 아니라 **마지막으로 막힌 때**를 봐야 합니다. 안 그러면 다시 시도했다가
+   * 또 막혀도 "지난 차단"으로 보여 화면이 대기로 돌아갑니다. */
+  const lastBlock = Array.isArray(s.blockLog) ? s.blockLog[s.blockLog.length - 1] : null;
+  const blockedAt = String(lastBlock?.at ?? s.startedAt);
 
   /* 막힌 뒤 이 작업을 **다시 고르면** 새 시도입니다. 선택 시각보다 앞선 차단은
    * 지난 시도라 화면을 대기로 돌립니다 — 안 그러면 다시 온 사람이 문 앞에서
    * 아까 막힌 화면부터 보게 됩니다. 차단 기록 자체는 그대로 남습니다. */
   const selectedAt = selected ? String(ctxDoc.data()?.selectedAt ?? "") : "";
-  if (s.state === "blocked" && selectedAt && String(s.startedAt) < selectedAt) {
-    return { phase: "ready", sessionId: null, required, entered: 0, members: [], selected };
+  if (s.state === "blocked" && selectedAt && blockedAt < selectedAt) {
+    return {
+      phase: "ready",
+      sessionId: null,
+      required,
+      entered: 0,
+      members: [],
+      selected,
+      step: "tagging",
+    };
   }
 
   if (s.state === "blocked") {
@@ -262,7 +319,7 @@ export async function loadKioskStatus(
       phase: "blocked",
       entered: 0,
       blockedReason: String(s.blockedReason ?? "검증을 통과하지 못했어요"),
-      blockedAtLabel: hhmm.format(started),
+      blockedAtLabel: hhmm.format(new Date(blockedAt)),
     };
   }
   if (s.state === "closed") {
@@ -290,5 +347,9 @@ export async function loadKioskStatus(
     };
   }
   // tagging · face · verifying · unlocking — 아직 문 앞입니다.
-  return { ...base, phase: "ready" };
+  const step =
+    s.state === "face" || s.state === "verifying" || s.state === "unlocking"
+      ? s.state
+      : "tagging";
+  return { ...base, phase: "ready", step };
 }

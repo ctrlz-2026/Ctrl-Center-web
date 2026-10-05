@@ -95,6 +95,10 @@ interface SessionDoc {
   enteredCount?: number;
   passedFirstTry?: boolean;
   blockedReason?: string;
+  /** 젯슨 판정에서 막힌 사람. 미등록 사원증이면 없습니다. */
+  blockedEmpNo?: string | null;
+  /** 막힌 이력. 다시 시도해 통과해도 남습니다. */
+  blockLog?: { at: string; empNo: string; reason: string; text: string }[];
   durationMinutes?: number;
   scheduledAt?: string | null;
   approvalRequestId?: string | null;
@@ -295,11 +299,19 @@ export async function loadDashboard(): Promise<DashboardData> {
     );
     if (resolved) continue;
     const wc = masters.workCodes.get(s.workCode);
+    /* 막힌 사람. 젯슨 판정은 blockedEmpNo 에, 키오스크 시연은 members 에
+       남깁니다. 미등록 사원증이면 둘 다 비어 있습니다. */
+    const who = [s.blockedEmpNo, ...(s.members ?? [])]
+      .filter(Boolean)
+      .map((m) => nameOf(String(m)))
+      .join(", ");
     anomalies.push({
       id: s.id,
       kind: "blocked",
       title: "입장 차단",
-      detail: `${s.members.map(nameOf).join(", ")} 님 — ${s.blockedReason ?? "검증 실패"}. ${s.workCode} ${wc?.name ?? ""} 작업에 들어가지 못했어요.`,
+      /* 누가 막혔는지 모를 수도 있습니다 — 등록되지 않은 사원증이면 사번 자체가
+         없습니다. 그때는 이름 없이 사유만 적습니다. */
+      detail: `${who ? `${who} 님 — ` : ""}${s.blockedReason ?? "검증 실패"}. ${s.workCode} ${wc?.name ?? ""} 작업에 들어가지 못했어요.`,
       siteId: s.siteId,
       siteName: masters.sites.get(s.siteId) ?? s.siteId,
       atLabel: hhmm.format(new Date(s.startedAt)),
@@ -467,6 +479,16 @@ export async function loadDashboard(): Promise<DashboardData> {
         ? `${Math.round(avgMs / 1000)}초`
         : `${Math.floor(avgMs / 60_000)}분`;
 
+  /* 오늘 막힌 횟수. 젯슨 판정 세션은 막혔다가 통과하면 state 가 바뀌므로
+   * 누적 이력(blockLog)으로 셉니다 — 통과했다고 막힌 사실이 사라지면 안 됩니다.
+   * 이력이 없는 세션(키오스크 시연)은 차단 상태 그대로 한 건으로 셉니다. */
+  const blockCountToday = sessions.reduce((n, s) => {
+    if (Array.isArray(s.blockLog) && s.blockLog.length > 0) {
+      return n + s.blockLog.filter((b) => seoulDate(new Date(b.at)) === today).length;
+    }
+    return n + (s.state === "blocked" && seoulDate(new Date(s.startedAt)) === today ? 1 : 0);
+  }, 0);
+
   /* 1차 검증 통과율은 **오늘 끝난 작업**으로 셉니다. 전체 기간으로 세면 오늘
    * 무슨 일이 있어도 숫자가 거의 안 움직입니다. 자동 종료된 세션과 키오스크
    * 시연(젯슨 대역)으로 연 세션은 뺍니다 — 둘 다 검증을 통과한 것도 실패한
@@ -485,7 +507,7 @@ export async function loadDashboard(): Promise<DashboardData> {
     todaySummary: [
       { label: "완료된 작업", value: `${closedToday.length}건` },
       { label: "1차 검증 통과율", value: passRate },
-      { label: "입장 차단", value: `${blockedToday.length}건` },
+      { label: "입장 차단", value: `${blockCountToday}건` },
       { label: "승인 / 반려", value: `${approved}건 / ${rejected}건` },
       { label: "평균 승인 소요", value: avgLabel },
     ],

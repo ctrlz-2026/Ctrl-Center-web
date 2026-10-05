@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-import type { KioskStatus } from "@/lib/kiosk-types";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { playSignal, soundReady, unlockSound } from "@/lib/kiosk-sound";
+import type { KioskSignal, KioskStatus } from "@/lib/kiosk-types";
 import styles from "../../../page.module.css";
 
 /* 키오스크 진행 화면 (클라이언트).
@@ -32,7 +33,19 @@ interface Task {
 
 const POLL_READY_MS = 4_000;
 const POLL_WORKING_MS = 15_000;
+/** 검증이 한창일 때(방금 뭔가 바뀌었을 때)만 잠깐 빨리 묻습니다. 사원증을 찍고
+ *  소리가 4초 뒤에 나면 고장난 줄 압니다. 30초 조용하면 다시 느려집니다. */
+const POLL_ACTIVE_MS = 1_500;
+const ACTIVE_WINDOW_MS = 30_000;
 const IDLE_STOP_MS = 20 * 60_000;
+
+/** 문 앞 단계별 안내. 서버 문구(message)가 있으면 그걸 본문에 씁니다. */
+const STEP_TITLE: Record<NonNullable<KioskStatus["step"]>, string> = {
+  tagging: "사원증을 대주세요",
+  face: "카메라를 봐주세요",
+  verifying: "보호구를 확인하고 있어요",
+  unlocking: "문이 열렸어요 · 들어가세요",
+};
 
 export function KioskLive({
   gateId,
@@ -54,6 +67,15 @@ export function KioskLive({
   /* 마지막으로 상태가 바뀐 시각. 오래 안 바뀌면 폴링을 멈춥니다. */
   const [changedAt, setChangedAt] = useState(() => Date.now());
   const [paused, setPaused] = useState(false);
+  const [soundOn, setSoundOn] = useState(false);
+  /* 직전 상태. 무엇이 바뀌었는지 보고 소리를 냅니다. */
+  const prevRef = useRef<KioskStatus>(initial);
+
+  useEffect(() => {
+    // 「입장 시작」을 누르고 넘어온 경우 이미 소리가 풀려 있습니다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSoundOn(soundReady());
+  }, []);
 
   const refresh = useCallback(async () => {
     const res = await fetch(`/api/kiosk/${gateId}/status?request=${task.requestId}`, {
@@ -61,18 +83,40 @@ export function KioskLive({
     });
     if (!res.ok) return;
     const next = (await res.json()) as KioskStatus;
-    setStatus((prev) => {
-      if (prev.phase !== next.phase || prev.sessionId !== next.sessionId) {
-        setChangedAt(Date.now());
-      }
-      return next;
-    });
+    const prev = prevRef.current;
+    prevRef.current = next;
+
+    const changed =
+      prev.phase !== next.phase ||
+      prev.sessionId !== next.sessionId ||
+      prev.step !== next.step ||
+      prev.signal?.at !== next.signal?.at;
+    if (changed) setChangedAt(Date.now());
+
+    /* 소리. 젯슨 판정은 서버가 "방금 일어난 일"(signal)을 알려주고, 키오스크
+       시연은 그런 신호가 없어 단계가 바뀐 것으로 판단합니다. */
+    let sound: KioskSignal | null = null;
+    if (next.signal && next.signal.at !== prev.signal?.at) sound = next.signal.kind;
+    else if (prev.phase !== next.phase) {
+      if (next.phase === "working") sound = "unlock";
+      else if (next.phase === "blocked") sound = "blocked";
+      else if (next.phase === "closed") sound = "exit";
+    }
+    if (sound) playSignal(sound);
+
+    setStatus(next);
   }, [gateId, task.requestId]);
 
   const phaseNow = status.phase;
   useEffect(() => {
     if (paused || phaseNow === "closed") return;
-    const every = phaseNow === "working" ? POLL_WORKING_MS : POLL_READY_MS;
+    const active = Date.now() - changedAt < ACTIVE_WINDOW_MS;
+    const every =
+      phaseNow === "working"
+        ? POLL_WORKING_MS
+        : active
+          ? POLL_ACTIVE_MS
+          : POLL_READY_MS;
     const t = setInterval(() => {
       if (document.visibilityState !== "visible") return;
       if (Date.now() - changedAt > IDLE_STOP_MS) {
@@ -81,8 +125,22 @@ export function KioskLive({
       }
       void refresh();
     }, every);
-    return () => clearInterval(t);
+    /* 빠른 주기는 조용해지면 풀려야 합니다. 주기를 고르는 건 이 effect 가 다시
+       돌 때뿐이라, 30초 뒤에 한 번 깨워 느린 주기로 갈아탑니다. */
+    const calm = active
+      ? setTimeout(() => setChangedAt((c) => c - 1), ACTIVE_WINDOW_MS)
+      : null;
+    return () => {
+      clearInterval(t);
+      if (calm) clearTimeout(calm);
+    };
   }, [refresh, phaseNow, paused, changedAt]);
+
+  async function enableSound() {
+    const ok = await unlockSound();
+    setSoundOn(ok);
+    if (ok) playSignal("card_ok");
+  }
 
   async function resume() {
     setChangedAt(Date.now());
@@ -124,10 +182,10 @@ export function KioskLive({
         </h1>
       </div>
 
-      <Steps phase={phase} blockedReason={status.blockedReason} />
+      <Steps phase={phase} step={status.step} blockedReason={status.blockedReason} />
 
       {phase === "ready" ? (
-        <div className={styles.stage}>
+        <div className={`${styles.stage} ${status.step === "unlocking" ? styles.stageWorking : ""}`}>
           <span className={styles.stageIcon} aria-hidden="true">
             <svg width="44" height="44" viewBox="0 0 24 24" fill="none">
               <rect x="2.5" y="5" width="19" height="14" rx="2.5" stroke="#8FB0FF" strokeWidth="1.6" />
@@ -135,13 +193,44 @@ export function KioskLive({
               <path d="M6 14.5h4" stroke="#8FB0FF" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
           </span>
-          <span className={styles.stageTitle}>사원증을 대주세요</span>
-          <p className={styles.stageBody}>
-            한 명씩 사원증을 대고 카메라를 봐주세요. 얼굴과 보호구(
-            {task.requiredPpe.join(", ")})를 확인합니다.{" "}
-            <strong>{task.headcount}명이 모두 통과하면 문이 열려요.</strong>
-          </p>
-          {!status.selected && !simulation ? (
+          <span className={styles.stageTitle}>{STEP_TITLE[status.step ?? "tagging"]}</span>
+          {/* 검증이 시작되면 서버가 정한 문구를 그대로 띄웁니다 — 기기와 화면이
+              같은 말을 해야 합니다. 시작 전에는 무엇을 하면 되는지 안내합니다. */}
+          {status.message && (status.tagged ?? 0) > 0 ? (
+            <p className={styles.stageBody}>
+              <strong>{status.message}</strong>
+            </p>
+          ) : (
+            <p className={styles.stageBody}>
+              한 명씩 사원증을 대고 카메라를 봐주세요. 얼굴과 보호구(
+              {task.requiredPpe.join(", ")})를 확인합니다.{" "}
+              <strong>{task.headcount}명이 모두 통과하면 문이 열려요.</strong>
+            </p>
+          )}
+          {(status.tagged ?? 0) > 0 ? (
+            <div className={styles.stats}>
+              <span className={styles.stat}>
+                <span className={styles.statValue}>{status.tagged}</span>
+                <span className={styles.statLabel}>사원증 확인</span>
+              </span>
+              <span className={styles.stat}>
+                <span className={styles.statValue}>
+                  {status.verified ?? 0}/{status.required}
+                </span>
+                <span className={styles.statLabel}>검증 통과</span>
+              </span>
+              <span className={styles.stat}>
+                <span className={styles.statValue}>
+                  {status.entered}/{status.required}
+                </span>
+                <span className={styles.statLabel}>입장</span>
+              </span>
+            </div>
+          ) : null}
+          {status.members.length > 0 ? (
+            <p className={styles.stageBody}>{status.members.join(" · ")}</p>
+          ) : null}
+          {!status.selected && !simulation && (status.tagged ?? 0) === 0 ? (
             <p className={styles.stageWarn}>
               이 게이트에 선택된 작업이 바뀌었어요. 다시 고르려면 아래
               「다른 작업 고르기」를 눌러주세요.
@@ -156,7 +245,8 @@ export function KioskLive({
           <p className={styles.stageBody}>
             <strong>{status.blockedReason}</strong>
             <br />
-            {status.members.join(", ")} 님 · {status.blockedAtLabel}
+            {status.members.length > 0 ? `${status.members.join(", ")} 님 · ` : ""}
+            {status.blockedAtLabel}
           </p>
           <p className={styles.stageBody}>
             보호구를 갖추고 다시 시도하거나, 자격 문제라면 팀장에게 알려주세요.
@@ -240,6 +330,13 @@ export function KioskLive({
 
       {error ? <p className={styles.error}>{error}</p> : null}
 
+      {/* 브라우저가 소리를 막고 있을 때만 보입니다. 한 번 누르면 풀립니다. */}
+      {!soundOn && phase !== "closed" ? (
+        <button type="button" className={styles.soundButton} onClick={enableSound}>
+          알림음 켜기 — 통과·차단을 소리로 알려줘요
+        </button>
+      ) : null}
+
       {paused ? (
         <button type="button" className={styles.secondary} onClick={resume}>
           한동안 변화가 없어 확인을 멈췄어요 · 눌러서 다시 확인
@@ -248,7 +345,9 @@ export function KioskLive({
 
       {/* 젯슨 대역. KIOSK_SIMULATION=on 일 때만 보입니다. 실제 기기가 붙으면
           이 칸은 사라지고, 위 화면이 기기의 검증 결과를 따라 바뀝니다. */}
-      {simulation && phase === "ready" ? (
+      {/* 젯슨이 이미 검증을 시작했으면(사원증이 찍혔으면) 숨깁니다 — 진짜 기기와
+          시연 버튼이 같은 작업을 동시에 진행시키면 세션이 둘로 갈립니다. */}
+      {simulation && phase === "ready" && (status.tagged ?? 0) === 0 ? (
         <div className={styles.sim}>
           <span className={styles.simLabel}>시연 모드 · 젯슨 대신 검증 결과 보내기</span>
           <div className={styles.simRow}>
@@ -296,17 +395,24 @@ function failedStep(reason: string | undefined): number {
   return 0;
 }
 
-/** 지금 어디까지 왔는지. */
+/** 지금 어디까지 왔는지. 문 앞 단계(step)까지 반영합니다. */
 function Steps({
   phase,
+  step,
   blockedReason,
 }: {
   phase: KioskStatus["phase"];
+  step?: KioskStatus["step"];
   blockedReason?: string;
 }) {
   const fail = phase === "blocked" ? failedStep(blockedReason) : -1;
+  const byStep = { tagging: 1, face: 2, verifying: 3, unlocking: 4 } as const;
   const reached =
-    phase === "working" || phase === "closed" ? 4 : phase === "blocked" ? fail + 1 : 1;
+    phase === "working" || phase === "closed"
+      ? 4
+      : phase === "blocked"
+        ? fail + 1
+        : byStep[step ?? "tagging"];
   return (
     <ol className={styles.progress}>
       {STEP_LABELS.map((label, i) => (
