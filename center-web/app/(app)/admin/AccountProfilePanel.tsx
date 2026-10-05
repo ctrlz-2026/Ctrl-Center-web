@@ -217,7 +217,9 @@ export function AccountProfilePanel({ empNo, headers, onSaved, onClose }: Props)
         <span className={styles.sectionTitle}>얼굴 등록</span>
         <p className={styles.lead}>
           얼굴 사진과 특징값은 <strong>젯슨(키오스크)에만</strong> 있고 이 웹에는
-          저장하지 않아요. 여기서는 등록을 마쳤는지만 대장으로 관리해요.
+          저장하지 않아요. 젯슨에서 등록을 마치면 여기 표시가 자동으로
+          &lsquo;등록됨&rsquo;으로 바뀌어요. 아래 버튼은 기기가 알리지 못했을 때
+          손으로 맞추는 용도예요.
         </p>
         <div className={styles.faceRow}>
           <Badge tone={faceEnrolled ? "success" : "neutral"}>

@@ -22,15 +22,30 @@ export async function GET(request: Request) {
   }
 
   const db = adminDb();
-  const [signupSnap, empSnap, authUsers] = await Promise.all([
+  const [signupSnap, empSnap, cardSnap, authUsers] = await Promise.all([
     db.collection("signupRequests").get(),
     db.collection("employees").get(),
+    db.collection("employeeCards").get(),
     // 로그인 계정이 실제로 있는지는 Auth 가 압니다. employees 에만 있고 계정이
     // 없는 가상 인물과 구분하기 위해 같이 읽습니다.
     adminAuth().listUsers(1000),
   ]);
 
   const emailSet = new Set(authUsers.users.map((u) => u.email ?? ""));
+
+  /* 사람별 현재 사원증. 폐기된 카드는 빼고, 실물이 하나라도 있으면 "발급됨"으로
+     봅니다. 게이트를 지날 수 있는 사람인지 목록에서 바로 보이게 하려는 것입니다. */
+  const cardOf = new Map<string, "issued" | "temp">();
+  for (const c of cardSnap.docs) {
+    const d = c.data();
+    if (d.revokedAt) continue;
+    const empNo = String(d.empNo);
+    if (d.pending === true) {
+      if (!cardOf.has(empNo)) cardOf.set(empNo, "temp");
+    } else {
+      cardOf.set(empNo, "issued");
+    }
+  }
 
   const signups: SignupRequest[] = signupSnap.docs
     .map((d) => {
@@ -55,7 +70,7 @@ export async function GET(request: Request) {
     });
 
   const accounts: ManagedAccount[] = empSnap.docs
-    .map((d) => {
+    .map((d): ManagedAccount => {
       const e = d.data();
       return {
         empNo: d.id,
@@ -65,6 +80,8 @@ export async function GET(request: Request) {
         role: e.role as Role,
         active: e.active !== false,
         hasLogin: emailSet.has(emailOf(d.id)),
+        card: cardOf.get(d.id) ?? ("none" as const),
+        faceEnrolled: e.faceEnrolled === true,
       };
     })
     // 로그인 계정이 있는 사람부터 — 관리 대상이 그쪽입니다.

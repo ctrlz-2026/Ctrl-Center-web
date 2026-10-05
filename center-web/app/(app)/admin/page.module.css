@@ -134,3 +134,10 @@
   display: flex;
   justify-content: flex-end;
 }
+
+/* 사원증·얼굴 상태 배지 두 개. 좁으면 위아래로 접힙니다. */
+.gateBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}

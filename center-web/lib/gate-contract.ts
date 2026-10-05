@@ -119,6 +119,22 @@ export interface GateContext {
   selected_at: string | null;
 }
 
+/**
+ * 얼굴 등록을 마쳤다는 알림 — **얼굴 데이터는 보내지 않습니다.**
+ *
+ *   POST /api/gate/{gate_id}/face-enrollment   (X-Gate-Key 필요)
+ *
+ * 얼굴은 젯슨 안에서 특징 벡터로 바뀌어 젯슨에만 저장됩니다. 서버가 아는 것은
+ * "이 사람이 등록을 마쳤는가" 한 가지입니다. 벡터·사진으로 보이는 필드
+ * (embedding · vector · image 등)가 섞여 오면 서버가 400 으로 거절합니다.
+ *
+ * 해제(퇴사·재등록 전 삭제)는 `enrolled: false` 로 보냅니다.
+ */
+export interface FaceEnrollmentRequest {
+  emp_no: string;
+  enrolled: boolean;
+}
+
 /** 서버가 판정한 세션 상태. 젯슨은 이걸 그대로 화면에 반영합니다.
  *
  * `unlocking` 다음은 항상 `working` 입니다 — 팀 결정으로, 문이 열리면 곧

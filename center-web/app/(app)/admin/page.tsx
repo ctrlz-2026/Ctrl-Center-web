@@ -282,9 +282,28 @@ function AdminPageInner() {
       ),
     },
     {
+      /* 게이트를 지나는 데 필요한 두 가지. 누가 아직 준비가 안 됐는지 목록에서
+         바로 보이게 합니다 — 전에는 한 명씩 "정보 관리"를 열어봐야 알았습니다. */
+      key: "gate",
+      header: "사원증 · 얼굴",
+      width: "150px",
+      render: (a) => (
+        <span className={styles.gateBadges}>
+          <Badge
+            tone={a.card === "issued" ? "success" : a.card === "temp" ? "warning" : "neutral"}
+          >
+            {a.card === "issued" ? "카드" : a.card === "temp" ? "임시 카드" : "카드 없음"}
+          </Badge>
+          <Badge tone={a.faceEnrolled ? "success" : "neutral"}>
+            {a.faceEnrolled ? "얼굴" : "얼굴 미등록"}
+          </Badge>
+        </span>
+      ),
+    },
+    {
       key: "state",
       header: "상태",
-      width: "100px",
+      width: "84px",
       render: (a) => (
         <Badge tone={a.active ? "success" : "neutral"}>
           {a.active ? "활성" : "비활성"}

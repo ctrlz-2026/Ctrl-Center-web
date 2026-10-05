@@ -163,6 +163,11 @@ export interface ManagedAccount {
   active: boolean;
   /** 로그인 계정이 실제로 있는지. 가상 인물은 employees 에만 있고 계정이 없습니다. */
   hasLogin: boolean;
+  /** 사원증 상태. 게이트를 지나려면 실물 카드가 등록돼 있어야 합니다.
+   *  - `issued` 실물 UID 등록됨  - `temp` 임시 UID (실물 미발급)  - `none` 없음 */
+  card: "issued" | "temp" | "none";
+  /** 젯슨에 얼굴 등록을 마쳤는지. 사진·특징값은 웹에 없습니다. */
+  faceEnrolled: boolean;
 }
 
 /** 개인별 출입 기록. 세션(작업) 단위가 아니라 **사람 단위**입니다.
