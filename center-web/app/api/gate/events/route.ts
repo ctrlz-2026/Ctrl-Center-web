@@ -200,6 +200,10 @@ async function applyEvents(
     blockedEmpNo: state === "blocked" ? (lastVerification?.emp_no || null) : null,
     blockLog,
     lastSignal: signal ? { kind: signal, at: now } : (old.lastSignal ?? null),
+    /* 시나리오(시연) 요청에서 생긴 세션은 시나리오 것입니다. 표시를 물려주지
+       않으면 시나리오를 다시 깔 때 이 세션만 남아, 그 작업이 "이미 끝난 작업"
+       으로 취급돼 키오스크 목록에서 빠집니다. */
+    ...(approval.demo === true ? { demo: true } : {}),
   }, { merge: true });
   if (shouldClearContext) {
     const ctx = db.collection("kioskContexts").doc(body.gate_id);

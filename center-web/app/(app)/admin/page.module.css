@@ -122,3 +122,15 @@
   font-weight: 500;
   color: var(--label-normal);
 }
+
+/* 작업자 등록 폼. 넓으면 한 줄에 다섯, 좁아지면 저절로 줄바꿈됩니다. */
+.registerGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.registerActions {
+  display: flex;
+  justify-content: flex-end;
+}

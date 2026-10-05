@@ -6,7 +6,7 @@ import { Button } from "@/components/Button";
 import { Card, CardHeader, CardTitle } from "@/components/Card";
 import { DataTable } from "@/components/DataTable";
 import type { Column } from "@/components/DataTable";
-import { TextArea } from "@/components/Field";
+import { TextArea, TextField } from "@/components/Field";
 import { Stack } from "@/components/Layout";
 import { RequireRole } from "@/components/RequireRole";
 import { Toast, useToast } from "@/components/Toast";
@@ -31,6 +31,9 @@ import styles from "./page.module.css";
  * 이름이 빈칸이 됩니다. 퇴사자는 비활성으로 내립니다. */
 
 const ROLES: Role[] = ["worker", "leader", "safety_admin"];
+
+/** 작업자 직접 등록 폼의 빈 값. */
+const EMPTY_FORM = { empNo: "", name: "", team: "", rank: "", cardUid: "" };
 
 async function authHeaders(): Promise<HeadersInit> {
   const token = await getFirebaseAuth()?.currentUser?.getIdToken();
@@ -64,6 +67,8 @@ function AdminPageInner() {
   const [resetInfo, setResetInfo] = useState<string | null>(null);
   /** 상세를 열어둔 사람. 자격·사원증·얼굴등록·작업배정을 여기서 편집합니다. */
   const [editing, setEditing] = useState<string | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [registering, setRegistering] = useState(false);
 
   const apply = useCallback((data: AdminData | null) => {
     if (!data) return;
@@ -116,6 +121,31 @@ function AdminPageInner() {
     setRejecting(null);
     setRejectReason("");
     await reload();
+  }
+
+  /** 안전관리자가 사람을 바로 등록합니다. 끝나면 그 사람의 정보 관리 창을
+   *  열어 자격·작업 배정을 이어서 넣을 수 있게 합니다. */
+  async function registerWorker() {
+    if (registering) return;
+    setRegistering(true);
+    const res = await fetch("/api/admin/accounts", {
+      method: "POST",
+      headers: await authHeaders(),
+      body: JSON.stringify(form),
+    });
+    const body = (await res.json().catch(() => null)) as {
+      error?: string;
+      empNo?: string;
+    } | null;
+    setRegistering(false);
+    if (!res.ok || !body?.empNo) {
+      show(body?.error ?? "등록하지 못했어요.");
+      return;
+    }
+    show(`${form.name} 님을 등록했어요. 첫 비밀번호는 사번 뒤에 1234 예요.`);
+    setForm(EMPTY_FORM);
+    await reload();
+    setEditing(body.empNo);
   }
 
   async function patchAccount(
@@ -374,6 +404,65 @@ function AdminPageInner() {
               </div>
             </div>
           ) : null}
+        </Card>
+
+        <Card padding={24} gap={16}>
+          <CardHeader>
+            <CardTitle>작업자 등록</CardTitle>
+          </CardHeader>
+          <p className={styles.lead}>
+            신청을 기다리지 않고 바로 등록해요. 등록하면 로그인 계정이 같이
+            만들어지고, 이어서 자격·작업 배정·얼굴 등록 여부를 넣는 창이 열려요.
+            사원증은 지금 넣어도 되고 나중에 넣어도 돼요.
+          </p>
+          <div className={styles.registerGrid}>
+            <TextField
+              label="사번 (숫자 9자리)"
+              inputMode="numeric"
+              placeholder="202612345"
+              value={form.empNo}
+              onChange={(e) => setForm({ ...form, empNo: e.target.value })}
+            />
+            <TextField
+              label="이름"
+              placeholder="홍길동"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+            <TextField
+              label="팀"
+              placeholder="생산1팀"
+              value={form.team}
+              onChange={(e) => setForm({ ...form, team: e.target.value })}
+            />
+            <TextField
+              label="직급"
+              placeholder="사원"
+              value={form.rank}
+              onChange={(e) => setForm({ ...form, rank: e.target.value })}
+            />
+            <TextField
+              label="사원증 UID (선택)"
+              placeholder="04A2B3C4"
+              value={form.cardUid}
+              onChange={(e) => setForm({ ...form, cardUid: e.target.value })}
+            />
+          </div>
+          <div className={styles.registerActions}>
+            <Button
+              size="medium"
+              disabled={
+                registering ||
+                !/^\d{9}$/.test(form.empNo.trim()) ||
+                !form.name.trim() ||
+                !form.team.trim() ||
+                !form.rank.trim()
+              }
+              onClick={registerWorker}
+            >
+              {registering ? "등록 중" : "등록"}
+            </Button>
+          </div>
         </Card>
 
         {editing ? (

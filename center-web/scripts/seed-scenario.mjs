@@ -179,15 +179,25 @@ async function clear() {
     db.collection("kioskContexts").get(),
   ]);
 
-  // 끝나지 않은 세션은 전부 시나리오가 다시 정합니다. 끝난 이력은 시나리오 것만.
-  const goneSessions = sessSnap.docs.filter((d) => {
-    const s = d.data();
-    return s.demo === true || d.id.startsWith("live-") || s.state !== "closed";
-  });
-  const goneIds = new Set(goneSessions.map((d) => d.id));
   const goneRequests = reqSnap.docs.filter(
     (d) => d.data().demo === true || d.id.startsWith("req-seed-"),
   );
+  const goneRequestIds = new Set(goneRequests.map((d) => d.id));
+
+  /* 끝나지 않은 세션은 전부 시나리오가 다시 정합니다. 끝난 이력은 시나리오 것만.
+   * **지워질 요청에 딸린 세션도 같이 지웁니다** — 키오스크나 젯슨 이벤트로
+   * 생긴 세션은 표시가 없을 수 있는데, 남겨두면 다시 깐 요청이 "이미 문이
+   * 열린 작업"으로 보여 키오스크 목록에 안 뜹니다. */
+  const goneSessions = sessSnap.docs.filter((d) => {
+    const s = d.data();
+    return (
+      s.demo === true ||
+      d.id.startsWith("live-") ||
+      s.state !== "closed" ||
+      goneRequestIds.has(String(s.approvalRequestId ?? ""))
+    );
+  });
+  const goneIds = new Set(goneSessions.map((d) => d.id));
 
   const [logSnap, noteSnap] = await Promise.all([
     db.collection("accessLogs").get(),
