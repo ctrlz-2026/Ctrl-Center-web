@@ -36,6 +36,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  /* 좁은 화면에서는 오른쪽 도구(필터·버튼)가 제목 아래로 내려갑니다.
+     제목을 눌러 두 줄로 꺾는 것보다 낫습니다. */
+  flex-wrap: wrap;
+}
+
+.header > .title {
+  flex: none;
 }
 
 .title {

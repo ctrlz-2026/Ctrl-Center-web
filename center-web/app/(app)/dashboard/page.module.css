@@ -420,11 +420,29 @@
 }
 
 @media (max-width: 599px) {
+  /* 휴대폰에서도 숫자 네 개는 한 화면에 들어와야 합니다. 한 줄에 하나씩 세우면
+     작업장 보드를 보려고 화면을 두 번 넘겨야 합니다. 두 칸으로 두고 설명은
+     숨깁니다 — 좁은 칸에 세 줄로 꺾인 설명은 읽히지 않습니다. */
   .kpis {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .kpiValue {
+    font-size: 28px;
+  }
+
+  .kpiHint {
+    display: none;
   }
 
   .board {
     grid-template-columns: 1fr;
+  }
+
+  /* 연결 표시와 키오스크 버튼은 제목 아래 줄로 내립니다. */
+  .headTools {
+    width: 100%;
+    justify-content: space-between;
   }
 }
