@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { isResponse, requireGate } from "@/lib/firebase/gate-auth";
+import { loadMasters } from "@/lib/firebase/queries";
+import { qualificationStatus } from "@/lib/firebase/user";
 import type { GateEvent, GateEventsRequest, GateStateResponse } from "@/lib/gate-contract";
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -38,6 +40,116 @@ function isValidEvent(e: unknown): e is GateEvent {
     typeof v.payload === "object" &&
     v.payload !== null
   );
+}
+
+const strings = (v: unknown): string[] => Array.isArray(v) ? v.map(String) : [];
+
+async function applyEvents(
+  body: GateEventsRequest,
+  approval: FirebaseFirestore.DocumentData,
+  events: GateEvent[],
+): Promise<Omit<GateStateResponse, "accepted" | "duplicated">> {
+  const db = adminDb();
+  const masters = await loadMasters();
+  const workCodeId = String(approval.workCode);
+  const work = masters.workCodes.get(workCodeId);
+  if (!work) throw new Error("work code missing");
+
+  const ref = db.collection("gateSessions").doc(`${body.gate_id}__${body.approval_request_id}`);
+  const snap = await ref.get();
+  const old = snap.exists ? snap.data()! : {};
+  const tagged = new Set(strings(old.taggedEmpNos));
+  const face = new Set(strings(old.facePassedEmpNos));
+  const verified = new Set(strings(old.verifiedEmpNos));
+  const entered = new Set(strings(old.enteredEmpNos));
+  const members = new Set(strings(old.members));
+  let state: GateStateResponse["state"] = old.state ?? "tagging";
+  let message = String(old.message ?? "사원증을 태그해 주세요.");
+  let unlock = false;
+  let lastVerification: GateStateResponse["last_verification"] | undefined;
+  let lastExit: GateStateResponse["last_exit"] | undefined;
+  let shouldClearContext = false;
+
+  const block = (empNo: string, reason: NonNullable<GateStateResponse["last_verification"]>["block_reason"], text: string, attempt = 0, failed: string[] = []) => {
+    state = "blocked";
+    message = text;
+    lastVerification = { emp_no: empNo, passed: false, failed_items: failed, attempt, block_reason: reason };
+    shouldClearContext = true;
+  };
+
+  for (const event of events) {
+    const p = event.payload as unknown as Record<string, unknown>;
+    if (event.kind === "card_tag") {
+      const uid = String(p.card_uid ?? "");
+      const card = uid ? await db.collection("employeeCards").doc(uid).get() : null;
+      const empNo = card?.exists ? String(card.data()!.empNo) : "";
+      const employee = empNo ? masters.employees.get(empNo) : undefined;
+      if (!card?.exists) { block("", "card_unknown", "등록되지 않은 사원증입니다."); continue; }
+      if (card.data()!.revokedAt) { block(empNo, "card_revoked", "폐기된 사원증입니다."); continue; }
+      if (!employee || employee.active === false) { block(empNo, "employee_inactive", "사용할 수 없는 직원 계정입니다."); continue; }
+      const allowed = Array.isArray(employee.allowedWorkCodes) ? employee.allowedWorkCodes.map(String) : null;
+      if (allowed && !allowed.includes(workCodeId)) { block(empNo, "not_assigned", "이 작업에 배정되지 않은 작업자입니다."); continue; }
+      const held = new Map<string, string>((employee.qualifications ?? []).map((q: { code: string; expiresOn: string }) => [String(q.code), String(q.expiresOn)]));
+      const missing = strings(work.requiredQualifications).find((code) => {
+        const expires = held.get(code);
+        return !expires || qualificationStatus(expires).status === "expired";
+      });
+      if (missing) { block(empNo, "qualification", `${masters.qualNames.get(missing) ?? missing} 자격이 없거나 만료됐습니다.`); continue; }
+      tagged.add(empNo); members.add(empNo); state = "face"; message = "얼굴을 확인하고 있습니다.";
+      continue;
+    }
+
+    const empNo = typeof p.emp_no === "string" ? p.emp_no : "";
+    if (!empNo || !tagged.has(empNo)) continue;
+    if (event.kind === "face_match") {
+      if (p.matched === true && p.live !== false) { face.add(empNo); state = "verifying"; message = "얼굴 확인 완료 · 보호구를 확인하고 있습니다."; }
+      else { state = "face"; message = "얼굴 확인에 실패했습니다. 다시 시도해 주세요."; lastVerification = { emp_no: empNo, passed: false, failed_items: [], attempt: 0, block_reason: "face" }; }
+    } else if (event.kind === "ppe_check") {
+      const items = Array.isArray(p.items) ? p.items : [];
+      const worn = new Set(items.filter((x) => typeof x === "object" && x !== null && (x as { worn?: boolean }).worn === true).map((x) => String((x as { code?: string }).code)));
+      const required = strings(work.requiredPpe).filter((code) => masters.ppeYolo.get(code) !== null);
+      const failed = required.filter((code) => !worn.has(code));
+      const attempt = Math.max(1, Number(p.attempt ?? 1));
+      if (!face.has(empNo)) { state = "face"; message = "얼굴 확인을 먼저 진행해 주세요."; }
+      else if (failed.length && attempt >= 3) block(empNo, "ppe", `${failed.map((x) => masters.ppeNames.get(x) ?? x).join(", ")} 미착용으로 입장이 차단됐습니다.`, attempt, failed);
+      else if (failed.length) { state = "verifying"; message = `필수 보호구를 확인해 주세요. (${attempt}/3)`; lastVerification = { emp_no: empNo, passed: false, failed_items: failed, attempt, block_reason: "ppe" }; }
+      else {
+        verified.add(empNo);
+        lastVerification = { emp_no: empNo, passed: true, failed_items: [], attempt };
+        const needed = Number(work.requiredHeadcount ?? 1);
+        unlock = verified.size >= needed;
+        state = unlock ? "unlocking" : "tagging";
+        message = unlock ? "검증 완료 · 문을 열 수 있습니다." : `검증 완료 · 추가 인원 ${needed - verified.size}명 대기 중입니다.`;
+        if (unlock) shouldClearContext = true;
+      }
+    } else if (event.kind === "entry" && verified.has(empNo)) {
+      entered.add(empNo);
+      const ready = verified.size >= Number(work.requiredHeadcount ?? 1);
+      state = ready ? "working" : "tagging";
+      message = ready ? "입장 처리되었습니다." : `입장 확인 · 추가 인원 ${Number(work.requiredHeadcount ?? 1) - verified.size}명 대기 중입니다.`;
+    } else if (event.kind === "exit") {
+      entered.delete(empNo); lastExit = { emp_no: empNo }; message = "퇴장 처리되었습니다.";
+    }
+  }
+
+  const required = Number(work.requiredHeadcount ?? 1);
+  const headcount = { required, tagged: tagged.size, verified: verified.size, entered: entered.size };
+  const now = new Date().toISOString();
+  await ref.set({
+    gateId: body.gate_id, siteId: approval.siteId, workCode: workCodeId,
+    approvalRequestId: body.approval_request_id, state, members: [...members],
+    enteredCount: entered.size, startedAt: old.startedAt ?? now, endedAt: old.endedAt ?? null,
+    taggedEmpNos: [...tagged], facePassedEmpNos: [...face], verifiedEmpNos: [...verified], enteredEmpNos: [...entered],
+    headcount, unlock, message, lastVerification: lastVerification ?? old.lastVerification ?? null,
+    lastExit: lastExit ?? old.lastExit ?? null, simulated: false, updatedAt: now,
+    ...(state === "blocked" ? { blockedReason: message } : {}),
+  }, { merge: true });
+  if (shouldClearContext) {
+    const ctx = db.collection("kioskContexts").doc(body.gate_id);
+    const ctxSnap = await ctx.get();
+    if (ctxSnap.data()?.approvalRequestId === body.approval_request_id) await ctx.delete();
+  }
+  return { session_id: ref.id, state, headcount, last_verification: lastVerification, last_exit: lastExit, unlock, message };
 }
 
 export async function POST(request: Request) {
@@ -118,6 +230,7 @@ export async function POST(request: Request) {
   const receivedAt = new Date().toISOString();
   let accepted = 0;
   let duplicated = 0;
+  const acceptedEvents: GateEvent[] = [];
 
   for (const event of body.events) {
     try {
@@ -136,6 +249,7 @@ export async function POST(request: Request) {
           receivedAt,
         });
       accepted += 1;
+      acceptedEvents.push(event);
     } catch (err) {
       // ALREADY_EXISTS = 중복. 그 외 오류는 그대로 알립니다.
       const code = (err as { code?: number }).code;
@@ -150,16 +264,16 @@ export async function POST(request: Request) {
     }
   }
 
-  // TODO: 아래 값들은 지금 고정입니다. 세션 상태 계산이 붙으면 실제 값이 나갑니다.
-  const response: GateStateResponse = {
-    session_id: "not-implemented",
-    state: "tagging",
-    headcount: { required: 0, tagged: 0, verified: 0, entered: 0 },
-    unlock: false,
-    message: "서버 준비 중이에요.",
-    accepted,
-    duplicated,
-  };
+  const decision = await applyEvents(body, approval, acceptedEvents);
+  if (acceptedEvents.length) {
+    const batch = db.batch();
+    acceptedEvents.forEach((event) => batch.update(
+      db.collection("gateEvents").doc(event.idempotency_key),
+      { sessionId: decision.session_id },
+    ));
+    await batch.commit();
+  }
+  const response: GateStateResponse = { ...decision, accepted, duplicated };
 
   return NextResponse.json(response);
 }
