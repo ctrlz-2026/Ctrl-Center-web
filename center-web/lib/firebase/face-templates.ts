@@ -44,7 +44,15 @@ function key(): Buffer {
   if (own) return createHash("sha256").update(own).digest();
   const secret = process.env.FIREBASE_PRIVATE_KEY;
   if (!secret) throw new Error("서버 비밀키가 없어 얼굴 벡터를 암호화할 수 없어요.");
-  return Buffer.from(hkdfSync("sha256", secret, "ctrl-center", KEY_INFO, 32));
+  /* 같은 비밀키라도 환경마다 **적힌 모양**이 다릅니다 — .env 파일에서는 줄바꿈이
+     역슬래시+n 두 글자이고, 배포 환경 설정에서는 진짜 줄바꿈일 수 있습니다. 그대로 쓰면
+     로컬에서 올린 벡터를 배포 서버가 풀지 못합니다. 머리말과 공백을 걷어내고
+     내용(base64)만으로 키를 만듭니다. */
+  const material = secret
+    .replace(/\\n/g, "") // .env 에 글자로 적힌 줄바꿈
+    .replace(/-----[A-Z ]+-----/g, "")
+    .replace(/["'\s]+/g, "");
+  return Buffer.from(hkdfSync("sha256", material, "ctrl-center", KEY_INFO, 32));
 }
 
 export interface FaceTemplateSummary {
