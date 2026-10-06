@@ -185,38 +185,6 @@ export function KioskLive({
 
       <Steps phase={phase} step={status.step} blockedReason={status.blockedReason} />
 
-      {/* 문 열림을 보여주는 3D 장면 (천호 님의 Unity 빌드).
-
-          실물 도어락 대신 **화면이 문**입니다 — 검증 인원이 차면 여기서 문이
-          열리고 사람이 한 명씩 들어갑니다. 판정은 서버가 하고 이 장면은 그 결과를
-          재생합니다.
-
-          아래 단계별 화면(ready · blocked · working) **바깥**에 한 번만 둡니다.
-          단계가 바뀔 때마다 새로 그리면 장면을 처음부터 다시 받아야 하고(약 11MB),
-          걸어 들어가던 사람도 끊깁니다. 작업이 끝나면 내립니다. */}
-      {phase !== "closed" ? (
-        <GateSimulation
-          bare
-          state={
-            phase === "working"
-              ? "working"
-              : phase === "blocked"
-                ? "blocked"
-                : status.step === "unlocking"
-                  ? "unlocked"
-                  : "verifying"
-          }
-          siteName={siteName}
-          work={`${task.code} ${task.title}`}
-          required={status.required}
-          entered={status.entered}
-          members={status.members}
-          crew={status.crew}
-          elapsed={status.elapsed ?? ""}
-          progress={null}
-        />
-      ) : null}
-
       {phase === "ready" ? (
         <div className={`${styles.stage} ${status.step === "unlocking" ? styles.stageWorking : ""}`}>
           <span className={styles.stageIcon} aria-hidden="true">
@@ -405,6 +373,42 @@ export function KioskLive({
             자격은 서버가 실제로 확인해요 — 자격이 만료된 사람은 「검증 통과」를
             눌러도 막힙니다.
           </span>
+        </div>
+      ) : null}
+
+      {/* 문 열림을 보여주는 3D 장면 (천호 님의 Unity 빌드) — **참고용이라 맨 아래**.
+
+          이 화면에서 사람이 봐야 하는 것은 "지금 무엇을 하면 되는가"(사원증 ·
+          얼굴 · 보호구 단계와 결과)입니다. 처음엔 장면을 단계 바로 아래에 뒀는데,
+          그림이 화면 한가운데를 차지해 정작 할 일이 밀렸습니다. 장면은 서버가
+          이미 내린 결과를 다시 보여주는 것이라 아래로 내렸습니다.
+
+          단계별 화면(ready · blocked · working) **바깥**에 한 번만 둡니다.
+          단계가 바뀔 때마다 새로 그리면 장면을 처음부터 다시 받아야 하고(약 11MB),
+          걸어 들어가던 사람도 끊깁니다. 작업이 끝나면 내립니다. */}
+      {phase !== "closed" ? (
+        <div className={styles.reference}>
+          <span className={styles.referenceLabel}>현장 모습 · 참고용</span>
+          <GateSimulation
+            bare
+            state={
+              phase === "working"
+                ? "working"
+                : phase === "blocked"
+                  ? "blocked"
+                  : status.step === "unlocking"
+                    ? "unlocked"
+                    : "verifying"
+            }
+            siteName={siteName}
+            work={`${task.code} ${task.title}`}
+            required={status.required}
+            entered={status.entered}
+            members={status.members}
+            crew={status.crew}
+            elapsed={status.elapsed ?? ""}
+            progress={null}
+          />
         </div>
       ) : null}
 

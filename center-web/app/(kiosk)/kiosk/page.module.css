@@ -734,3 +734,16 @@
     justify-content: flex-start;
   }
 }
+
+/* ── 현장 모습 (3D 시뮬레이션) — 참고용이라 맨 아래 ───────────── */
+.reference {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.referenceLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+}
