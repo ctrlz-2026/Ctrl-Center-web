@@ -120,19 +120,61 @@ export interface GateContext {
 }
 
 /**
- * 얼굴 등록을 마쳤다는 알림 — **얼굴 데이터는 보내지 않습니다.**
+ * 얼굴 등록을 마쳤다는 알림 — **이 경로로는 얼굴 데이터를 보내지 않습니다.**
  *
  *   POST /api/gate/{gate_id}/face-enrollment   (X-Gate-Key 필요)
  *
- * 얼굴은 젯슨 안에서 특징 벡터로 바뀌어 젯슨에만 저장됩니다. 서버가 아는 것은
- * "이 사람이 등록을 마쳤는가" 한 가지입니다. 벡터·사진으로 보이는 필드
- * (embedding · vector · image 등)가 섞여 오면 서버가 400 으로 거절합니다.
+ * 젯슨 앞에서 직접 등록했을 때 "이 사람이 등록을 마쳤다"는 사실만 알리는
+ * 경로입니다. 벡터·사진으로 보이는 필드(embedding · vector · image 등)가 섞여
+ * 오면 400 으로 거절합니다 — 벡터는 관리자가 파일로 올리는 경로가 따로 있습니다
+ * (아래 FaceTemplatesResponse 참고).
  *
  * 해제(퇴사·재등록 전 삭제)는 `enrolled: false` 로 보냅니다.
  */
 export interface FaceEnrollmentRequest {
   emp_no: string;
   enrolled: boolean;
+}
+
+/**
+ * 얼굴 특징 벡터 내려받기.
+ *
+ *   GET /api/gate/{gate_id}/face-templates[?date=YYYY-MM-DD]   (X-Gate-Key 필요)
+ *
+ * 2026-10-06 부터 서버가 얼굴 **특징 벡터**를 보관합니다 (사진은 여전히 받지
+ * 않습니다). 흐름은 이렇습니다.
+ *
+ *   1. 젯슨이 얼굴을 찍어 벡터를 만들고 파일로 내보냅니다 (JSON 또는 .npy)
+ *   2. 안전관리자가 웹 계정 관리에서 그 사람에게 파일을 올립니다
+ *   3. 게이트 기기가 이 경로로 내려받아, 자기 안에서 얼굴을 비교합니다
+ *
+ * **비교(판정)는 여전히 젯슨이 합니다.** 서버는 보관했다가 돌려줄 뿐이고,
+ * 어느 모델의 벡터인지도 해석하지 않습니다.
+ *
+ * 내려가는 범위는 일일 번들과 같습니다 — 그날 이 게이트에 올 수 있는 사람 것만.
+ * 바뀐 것이 없으면 304 (If-None-Match 에 지난 ETag 를 보내세요).
+ */
+export interface FaceTemplateEntry {
+  emp_no: string;
+  /** 벡터 길이 (모델에 따라 128 · 512 등). */
+  dim: number;
+  /** 올릴 때 적힌 모델 이름. 안 적혔으면 null. */
+  model: string | null;
+  /** 벡터들. 한 장만 등록했으면 1개, 각도를 달리해 여러 장이면 여러 개입니다.
+   *  값은 float32 입니다. */
+  vectors: number[][];
+  uploaded_at: string;
+}
+
+export interface FaceTemplatesResponse {
+  gate_id: string;
+  valid_for: string;
+  templates: FaceTemplateEntry[];
+  /** "등록됨"으로 표시돼 있지만 서버에 벡터가 없는 사번. 어느 젯슨 앞에서 직접
+   *  등록해 알림만 온 경우입니다 — 그 기기에만 벡터가 있습니다. */
+  enrolled_without_template: string[];
+  /** 서버 키가 바뀌어 풀 수 없게 된 벡터의 사번. 관리자가 다시 올려야 합니다. */
+  needs_reupload: string[];
 }
 
 /** 서버가 판정한 세션 상태. 젯슨은 이걸 그대로 화면에 반영합니다.
@@ -251,8 +293,9 @@ export interface BundleWork {
 /**
  * 그 게이트에 들어올 수 있는 사람.
  *
- * **얼굴 사진·특징값은 담지 않습니다.** 생체정보를 웹 DB 에 두지 않는다는 원칙이
- * 그대로 적용됩니다 — 등록을 마쳤는지(`face_enrolled`)만 알려주고, 실제 템플릿은
+ * **얼굴 사진·특징값은 번들에 담지 않습니다.** 번들에는 등록을 마쳤는지
+ * (`face_enrolled`)만 있고, 벡터는 /face-templates 로 따로 받습니다 — 크기가 크고
+ * 바뀌는 주기가 달라 한 묶음으로 두면 매번 같이 내려가기 때문입니다. 벡터가 서버에 없는 경우 실제 템플릿은
  * 젯슨이 자기 안에 가지고 있습니다.
  */
 export interface BundleWorker {

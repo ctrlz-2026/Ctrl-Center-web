@@ -111,6 +111,21 @@
   flex-wrap: wrap;
 }
 
+.faceMeta {
+  font-size: 13px;
+  color: var(--label-alternative);
+}
+
+/* 파일 고르기 칸은 숨기고 버튼으로 엽니다. 브라우저 기본 모양이 다른 버튼과
+   높이·글꼴이 달라 한 줄에 놓으면 어긋납니다. */
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ── 작업 배정 ────────────────────────────────────────────── */
 
 .radioRow {

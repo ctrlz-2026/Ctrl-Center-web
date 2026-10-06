@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { Card, CardHeader, CardTitle } from "@/components/Card";
@@ -10,9 +10,10 @@ import styles from "./profile.module.css";
 
 /* 한 사람의 자격 · 사원증 · 얼굴등록 · 작업배정 편집기.
  *
- * 얼굴은 **등록 여부만** 다룹니다. 사진과 특징값은 젯슨이 갖고 있고 웹에는
- * 오지 않습니다 — 생체정보를 웹 DB 에 두면 보관·파기 책임이 따라오고,
- * "젯슨이 판정하고 웹은 결과만 받는다"는 계약과도 어긋납니다. */
+ * 얼굴은 젯슨이 만든 **특징 벡터 파일**을 올려 등록합니다 (2026-10-06 부터).
+ * 사진은 올리지 않습니다. 올린 벡터는 서버가 암호화해 보관하고 게이트 기기만
+ * 내려받습니다 — 이 화면도 올린 뒤에는 "몇 차원 · 몇 개 · 언제"만 볼 수 있고,
+ * 벡터를 다시 내려받지 못합니다. */
 
 interface Props {
   empNo: string;
@@ -34,6 +35,10 @@ export function AccountProfilePanel({ empNo, headers, onSaved, onClose }: Props)
   const [restrict, setRestrict] = useState(false);
   const [allowed, setAllowed] = useState<string[]>([]);
   const [newQual, setNewQual] = useState("");
+  const [template, setTemplate] = useState<AccountProfile["faceTemplate"]>(null);
+  const [faceBusy, setFaceBusy] = useState(false);
+  const [faceError, setFaceError] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let alive = true;
@@ -57,6 +62,7 @@ export function AccountProfilePanel({ empNo, headers, onSaved, onClose }: Props)
       );
       setCardUid(data.profile.card?.cardUid ?? "");
       setFaceEnrolled(data.profile.faceEnrolled);
+      setTemplate(data.profile.faceTemplate);
       setRestrict(data.profile.allowedWorkCodes !== null);
       setAllowed(data.profile.allowedWorkCodes ?? []);
     })();
@@ -87,6 +93,57 @@ export function AccountProfilePanel({ empNo, headers, onSaved, onClose }: Props)
       return;
     }
     onSaved(`${profile?.name ?? ""} 님 정보를 저장했어요.`);
+  }
+
+  /* 벡터 파일 올리기 · 지우기. 아래 「저장」과 **따로** 바로 반영됩니다 —
+     파일을 고른 뒤 저장을 안 누르고 닫으면 등록이 안 된 줄 모르기 쉽습니다. */
+  async function uploadTemplate(file: File) {
+    setFaceBusy(true);
+    setFaceError(null);
+    const form = new FormData();
+    form.append("file", file);
+    // 파일을 보낼 때는 content-type 을 직접 정하지 않습니다 (브라우저가 경계값을 붙입니다).
+    const { authorization } = (await headers()) as Record<string, string>;
+    const res = await fetch(`/api/admin/accounts/${empNo}/face-template`, {
+      method: "PUT",
+      headers: authorization ? { authorization } : undefined,
+      body: form,
+    });
+    const body = (await res.json().catch(() => null)) as
+      | (NonNullable<AccountProfile["faceTemplate"]> & { error?: string })
+      | null;
+    setFaceBusy(false);
+    if (fileInput.current) fileInput.current.value = "";
+    if (!res.ok || !body) {
+      setFaceError(body?.error ?? "올리지 못했어요.");
+      return;
+    }
+    setTemplate({
+      dim: body.dim,
+      count: body.count,
+      model: body.model,
+      fileName: body.fileName,
+      uploadedAt: body.uploadedAt,
+    });
+    setFaceEnrolled(true);
+  }
+
+  async function removeTemplate() {
+    setFaceBusy(true);
+    setFaceError(null);
+    const { authorization } = (await headers()) as Record<string, string>;
+    const res = await fetch(`/api/admin/accounts/${empNo}/face-template`, {
+      method: "DELETE",
+      headers: authorization ? { authorization } : undefined,
+    });
+    setFaceBusy(false);
+    if (!res.ok) {
+      const body = (await res.json().catch(() => null)) as { error?: string } | null;
+      setFaceError(body?.error ?? "지우지 못했어요.");
+      return;
+    }
+    setTemplate(null);
+    setFaceEnrolled(false);
   }
 
   if (!profile || !options) {
@@ -216,28 +273,75 @@ export function AccountProfilePanel({ empNo, headers, onSaved, onClose }: Props)
       <section className={styles.section}>
         <span className={styles.sectionTitle}>얼굴 등록</span>
         <p className={styles.lead}>
-          얼굴 사진과 특징값은 <strong>젯슨(키오스크)에만</strong> 있고 이 웹에는
-          저장하지 않아요. 젯슨에서 등록을 마치면 여기 표시가 자동으로
-          &lsquo;등록됨&rsquo;으로 바뀌어요. 아래 버튼은 기기가 알리지 못했을 때
-          손으로 맞추는 용도예요.
+          젯슨이 얼굴을 찍어 만든 <strong>특징 벡터 파일</strong>(JSON 또는
+          .npy)을 올리면 등록돼요. 사진은 올리지 않아요. 올린 벡터는 암호화해서
+          보관하고 게이트 기기만 내려받아요 — 이 화면에서도 다시 볼 수 없어요.
         </p>
+
         <div className={styles.faceRow}>
           <Badge tone={faceEnrolled ? "success" : "neutral"}>
             {faceEnrolled ? "등록됨" : "미등록"}
           </Badge>
-          {profile.faceEnrolledAt && faceEnrolled ? (
-            <span className={styles.lead}>
-              {new Date(profile.faceEnrolledAt).toLocaleDateString("ko-KR")} 등록
+          {template ? (
+            <span className={styles.faceMeta}>
+              벡터 {template.count}개 · {template.dim}차원
+              {template.model ? ` · ${template.model}` : ""} ·{" "}
+              {new Date(template.uploadedAt).toLocaleDateString("ko-KR")} 올림
+              {template.fileName ? ` (${template.fileName})` : ""}
+            </span>
+          ) : faceEnrolled ? (
+            <span className={styles.faceMeta}>
+              젯슨 앞에서 직접 등록됨 — 서버에는 벡터가 없어 그 기기에서만
+              인식돼요
             </span>
           ) : null}
+        </div>
+
+        {faceError ? <p className={styles.error}>{faceError}</p> : null}
+
+        <div className={styles.faceRow}>
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".json,.npy,.txt,.csv,application/json,text/plain"
+            className={styles.fileInput}
+            aria-label="얼굴 특징 벡터 파일"
+            disabled={faceBusy}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void uploadTemplate(f);
+            }}
+          />
           <Button
             size="small"
-            variant="outlined"
-            color="assistive"
-            onClick={() => setFaceEnrolled(!faceEnrolled)}
+            disabled={faceBusy}
+            onClick={() => fileInput.current?.click()}
           >
-            {faceEnrolled ? "등록 해제" : "등록 완료로 표시"}
+            {faceBusy ? "처리 중" : template ? "벡터 파일 바꾸기" : "벡터 파일 올리기"}
           </Button>
+          {template ? (
+            <Button
+              size="small"
+              variant="outlined"
+              color="assistive"
+              disabled={faceBusy}
+              onClick={removeTemplate}
+            >
+              벡터 삭제
+            </Button>
+          ) : (
+            /* 벡터 없이 표시만 맞추는 용도. 젯슨 앞에서 등록했는데 기기가
+               알리지 못했을 때 씁니다. 아래 「저장」을 눌러야 반영됩니다. */
+            <Button
+              size="small"
+              variant="outlined"
+              color="assistive"
+              disabled={faceBusy}
+              onClick={() => setFaceEnrolled(!faceEnrolled)}
+            >
+              {faceEnrolled ? "등록 해제" : "벡터 없이 등록됨으로 표시"}
+            </Button>
+          )}
         </div>
       </section>
 

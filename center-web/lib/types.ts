@@ -135,9 +135,18 @@ export interface AccountProfile {
   qualifications: { code: string; name: string; expiresOn: string }[];
   /** 사원증 NFC UID. 실물 발급 전에는 `TEMP-*` 이고 pending 입니다. */
   card: { cardUid: string; issuedAt: string; pending: boolean } | null;
-  /** 젯슨에 얼굴이 등록됐는지. 사진·특징값은 웹에 저장하지 않습니다. */
+  /** 얼굴이 등록됐는지. 벡터를 올렸거나, 젯슨이 "등록했다"고 알린 경우입니다. */
   faceEnrolled: boolean;
   faceEnrolledAt: string | null;
+  /** 서버에 올라와 있는 얼굴 특징 벡터의 요약. **벡터 자체는 브라우저로 오지
+   *  않습니다** — 몇 차원 · 몇 개 · 언제 올렸는지만 봅니다. 없으면 null. */
+  faceTemplate: {
+    dim: number;
+    count: number;
+    model: string | null;
+    fileName: string | null;
+    uploadedAt: string;
+  } | null;
   /** 이 사람에게 배정된 작업코드.
    *  `null` = 배정 제한 없음(자격 요건만 봅니다). 배열이면 그 목록으로 제한됩니다.
    *  **자격과 별개의 조건입니다** — 자격이 있어도 배정되지 않으면 못 하고,

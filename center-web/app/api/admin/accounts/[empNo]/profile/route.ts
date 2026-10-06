@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { isResponse, requireCaller } from "@/lib/firebase/auth-guard";
+import { deleteFaceTemplate } from "@/lib/firebase/face-templates";
 import { loadMasters, invalidateMasters } from "@/lib/firebase/queries";
 import { canManageAccounts } from "@/lib/types";
 import type { AccountProfile, AccountProfileOptions } from "@/lib/types";
 
 /* 한 사람의 자격 · 사원증 · 얼굴등록 · 작업배정.
  *
- * **얼굴 사진과 특징값은 여기서 다루지 않습니다.** 얼굴인식 판정은 젯슨이
- * 전부 하고(lib/gate-contract.ts) 웹은 결과만 받습니다. 생체정보를 웹 DB 에
- * 두면 보관·파기 책임이 통째로 따라오므로, 웹은 "등록됐는지"만 대장으로 듭니다.
- * 실제 등록 작업은 젯슨 앞에서 하고 여기서는 그 사실을 기록만 합니다. */
+ * **얼굴 벡터 자체는 여기서 주고받지 않습니다.** 올리고 지우는 것은
+ * ../face-template 경로가 맡고, 여기서는 "등록됐는지"와 벡터의 요약(몇 차원 ·
+ * 몇 개 · 언제)만 내려줍니다. 벡터는 브라우저로 다시 나가지 않습니다. */
 
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -70,6 +70,15 @@ export async function GET(
       : null,
     faceEnrolled: e.faceEnrolled === true,
     faceEnrolledAt: e.faceEnrolledAt ?? null,
+    faceTemplate: e.faceTemplate
+      ? {
+          dim: Number(e.faceTemplate.dim),
+          count: Number(e.faceTemplate.count),
+          model: e.faceTemplate.model ?? null,
+          fileName: e.faceTemplate.fileName ?? null,
+          uploadedAt: String(e.faceTemplate.uploadedAt),
+        }
+      : null,
     allowedWorkCodes: Array.isArray(e.allowedWorkCodes)
       ? e.allowedWorkCodes
       : null,
@@ -179,14 +188,26 @@ export async function PUT(
   }
 
   // ── 얼굴 등록 여부 ───────────────────────────────────────────────────
+  /* 손으로 맞추는 표시입니다 (젯슨 앞에서 등록했는데 알림이 안 온 경우).
+   * **바뀔 때만** 적습니다 — 화면은 저장할 때마다 현재 값을 같이 보내는데,
+   * 그때마다 등록 시각과 등록자를 덮어쓰면 다른 칸을 고친 것만으로 "방금 이
+   * 관리자가 등록했다"가 됩니다. */
+  let dropTemplate = false;
   if (body.faceEnrolled !== undefined) {
     const enrolled = body.faceEnrolled === true;
-    patch.faceEnrolled = enrolled;
-    patch.faceEnrolledAt = enrolled ? new Date().toISOString() : null;
-    patch.faceEnrolledBy = enrolled ? caller.empNo : null;
+    const was = snap.data()?.faceEnrolled === true;
+    if (enrolled !== was) {
+      patch.faceEnrolled = enrolled;
+      patch.faceEnrolledAt = enrolled ? new Date().toISOString() : null;
+      patch.faceEnrolledBy = enrolled ? caller.empNo : null;
+      // 등록을 해제하는데 벡터가 올라와 있으면 벡터도 같이 지웁니다.
+      // "미등록"인데 기기는 벡터를 받아 통과시키는 상태가 되면 안 됩니다.
+      if (!enrolled && snap.data()?.faceTemplate) dropTemplate = true;
+    }
   }
 
   if (Object.keys(patch).length > 0) await ref.update(patch);
+  if (dropTemplate) await deleteFaceTemplate(empNo);
 
   // ── 사원증 ───────────────────────────────────────────────────────────
   /* 카드는 employees 가 아니라 employeeCards 에 있습니다(문서 ID = 카드 UID).

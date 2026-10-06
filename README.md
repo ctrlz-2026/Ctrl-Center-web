@@ -175,10 +175,12 @@ center-web/
       signup/                가입 신청 — 유일하게 인증 없이 열린 경로
       admin/accounts/        계정 목록 · 역할/비번/활성
         [empNo]/profile/     자격 · 사원증 · 얼굴등록 · 작업배정
+        [empNo]/face-template/  얼굴 특징 벡터 파일 올리기 · 삭제
       admin/signups/[id]/    가입 승인·거절
       stream/requests/       SSE 실시간
       gate/events/           젯슨 수신구 (기기 키)
-      gate/manual/           젯슨 대역 수동 제어 — 기기가 붙으면 삭제
+      gate/[gateId]/         번들 · 선택된 작업 · 얼굴 등록 알림 · 얼굴 벡터 내려받기 (기기 키)
+      kiosk/[gateId]/        키오스크 화면용 (작업 선택 · 상태 · 종료 · 시연)
   components/                Button · Badge · Card · DataTable · Field · Logo · TopNav …
   lib/
     firebase/                client · admin · queries · dashboard · auth-guard · user
@@ -216,7 +218,8 @@ docs/
   들어가는데 승인자가 한 명뿐이라 막으면 게이트를 통과할 수 없습니다.
   대신 `selfApproved`로 기록에 남깁니다
 - 작업 배정과 자격은 **별개의 조건**입니다. 배정 확인은 서버, 자격 확인은 게이트
-- 얼굴 사진·특징값은 **웹에 저장하지 않습니다.** 등록 여부만 대장으로 듭니다
+- 얼굴 **사진은 저장하지 않습니다.** 젯슨이 만든 특징 벡터만 안전관리자가 파일로 올려 등록하고,
+  암호화해 보관하며 게이트 기기만 내려받습니다 (브라우저로는 다시 나가지 않습니다)
 
 **아직인 것**
 
