@@ -1,25 +1,49 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { CrewMember } from "@/lib/types";
 import styles from "./GateSimulation.module.css";
 
 /* ────────────────────────────────────────────────────────────────────────────
- * 게이트 시뮬레이션 자리 (천호 님 담당)
+ * 게이트 3D 시뮬레이션 (천호 님의 Unity WebGL 빌드)
  *
  * 멘토링에서 "실제 문 대신 화면으로 열림·닫힘을 보여주는 것도 좋다"는 답을
- * 받았고, 그 화면은 천호 님이 만듭니다. 이 파일은 **끼울 자리와 넘겨줄 데이터**
- * 만 정해 둔 것입니다.
+ * 받았고, 그 화면을 천호 님이 Unity 로 만들었습니다. 빌드는
+ * `public/safety-gate-3d/` 에 통째로 들어 있고, 여기서는 iframe 으로 띄운 뒤
+ * **지금 상태를 알려주기만** 합니다.
  *
- * 붙이는 방법
- *   1. 이 파일의 GateSimulation 본문을 천호 님 컴포넌트로 바꿉니다.
- *      (다른 파일로 만들었다면 여기서 import 해서 그대로 렌더해도 됩니다)
- *   2. 아래 GateSimulationProps 는 **바꾸지 않습니다.** 관제의 세션 상세가 이
- *      모양으로 값을 넘깁니다. 더 필요한 값이 있으면 필드를 추가만 합니다.
- *   3. 값은 관제 실시간 스트림(SSE)에서 오므로, 키오스크에서 문이 열리거나
- *      작업이 끝나면 이 컴포넌트가 새 props 로 다시 그려집니다. 폴링을 따로
- *      할 필요가 없습니다.
+ * 누가 무엇을 맡는가
+ *   - Unity : 문 · 작업장 · 작업자 아바타를 그리고 움직입니다. 판정하지 않습니다
+ *   - 웹     : 인원 · 상태 · 이름 같은 글자 정보를 표시합니다
+ *   - 서버   : 누가 통과했고 누가 들어갔는지 판정합니다 (관제 실시간 스트림으로 옴)
  *
- * 상태 흐름 (lib/gate-contract.ts 와 같은 순서)
- *   tagging → face → verifying → unlocking → working → closed
- *   문 열림은 곧 작업 시작입니다. unlocking 은 해정 애니메이션용 짧은 상태입니다.
+ * 그래서 이 화면은 **재생기**입니다. 여기서 문이 열려 보인다고 실제 문이 열리는
+ * 것이 아니고, 서버가 이미 내린 결과를 그림으로 보여줄 뿐입니다.
+ *
+ * 주고받는 방식 (천호 님 문서 Integration/WEB_DASHBOARD_EMBED.md)
+ *   iframe → 웹   { channel, type: "ready" }              장면 준비 끝
+ *   웹 → iframe   { channel, type: "set-state", payload } 지금 상태
+ *   iframe → 웹   { channel, type: "error", message }     불러오기 실패
+ *   같은 출처(origin)의 메시지만 주고받습니다.
+ *
+ * 빌드를 새로 받았을 때 — `public/safety-gate-3d/` 를 통째로 바꾸면 됩니다.
+ * 메시지 형식이 그대로라면 이 파일은 고칠 필요가 없습니다.
  * ──────────────────────────────────────────────────────────────────────────── */
+
+const CHANNEL = "safety-gate-3d";
+const SRC = "/safety-gate-3d/index.html";
+
+/** 장면에 있는 아바타 자리. **이 id 로 보낸 작업자만 그려집니다.**
+ *
+ *  천호 님 문서는 "안정적인 직원 ID 를 넘기라"고 하지만, 지금 빌드(3.0.1)는
+ *  자리 세 개가 이 id 에 고정돼 있어 다른 값(사번 · 임의 문자열 · W009)은
+ *  오류 없이 무시됩니다 — 문은 열리는데 사람만 안 보이는 식으로 나타납니다.
+ *  실제로 값을 하나씩 바꿔 보내 확인한 결과입니다 (2026-10-06).
+ *
+ *  그래서 참여자를 **순서대로 이 자리에 앉힙니다.** 참여자 순서는 사원증을
+ *  찍은 순서로 고정이라, 같은 사람은 작업 내내 같은 자리를 씁니다. */
+const AVATAR_SLOTS = ["W001", "W002", "W003"] as const;
+const MAX_AVATARS = AVATAR_SLOTS.length;
 
 export interface GateSimulationProps {
   /** 관제 화면 상태. "waiting"(태그 대기) · "verifying" · "unlocked" · "working" */
@@ -33,37 +57,156 @@ export interface GateSimulationProps {
   entered: number;
   /** 참여자 이름 (입장 순) */
   members: string[];
+  /** 참여자별 위치. 없으면 members 와 entered 로 추정합니다. */
+  crew?: CrewMember[];
   /** 경과 표시 ("38분") */
   elapsed: string;
   /** 경과 / 예상시간. 1 을 넘으면 초과. 예상시간이 없으면 null */
   progress: number | null;
 }
 
+/** Unity 가 아는 작업 상태에 우리 상태를 맞춥니다. */
+const SCENE_STATUS: Record<GateSimulationProps["state"], string> = {
+  approved: "VERIFYING",
+  waiting: "VERIFYING",
+  verifying: "VERIFYING",
+  blocked: "VERIFYING",
+  unlocked: "READY",
+  working: "WORKING",
+};
+
+const AVATAR_STATE = {
+  out: "OUT",
+  verified: "VERIFIED",
+  in: "IN",
+  blocked: "BLOCKED",
+} as const;
+
+const POSITION_LABEL: Record<CrewMember["position"], string> = {
+  out: "검증 전",
+  verified: "문 앞 대기",
+  in: "작업 중",
+  blocked: "차단",
+};
+
+type Load = "loading" | "ready" | "error";
+
 export function GateSimulation(props: GateSimulationProps) {
+  const frame = useRef<HTMLIFrameElement>(null);
+  const [load, setLoad] = useState<Load>("loading");
+  const [error, setError] = useState("");
+
+  const crew: CrewMember[] = useMemo(
+    () =>
+      props.crew ??
+      props.members.map((name, i) => ({
+        name,
+        position: i < props.entered ? "in" : "out",
+      })),
+    [props.crew, props.members, props.entered],
+  );
+
+  /* 장면에 넘길 상태.
+
+     문은 "검증 인원이 찼고 아직 다 안 들어간 동안"만 열려 보입니다 — 서버가
+     unlock 을 답하는 조건과 같습니다. 전원이 들어가면 닫힙니다.
+
+     아바타 id 는 사번이 아니라 **이 작업 안에서의 자리**(AVATAR_SLOTS)입니다.
+
+     문자열로 만들어 두는 이유 — 관제 스트림은 다른 작업장이 바뀌어도 새 객체를
+     내려보냅니다. 객체로 비교하면 그때마다 다시 보내게 되고, 장면이 진행 중인
+     이동을 매번 다시 계산합니다. 내용이 실제로 바뀌었을 때만 보냅니다. */
+  const message = useMemo(
+    () =>
+      JSON.stringify({
+        workName: props.work,
+        workplace: props.siteName,
+        status: SCENE_STATUS[props.state],
+        doorOpen: props.state === "unlocked",
+        required: props.required,
+        verified: crew.filter((c) => c.position === "in" || c.position === "verified")
+          .length,
+        entered: props.entered,
+        workers: crew.slice(0, MAX_AVATARS).map((c, i) => ({
+          id: AVATAR_SLOTS[i],
+          name: c.name,
+          state: AVATAR_STATE[c.position],
+        })),
+      }),
+    [props.work, props.siteName, props.state, props.required, props.entered, crew],
+  );
+
+  // 장면이 준비됐다고 알려오면 그때부터 보냅니다. 그 전에 보낸 건 받을 곳이 없습니다.
+  useEffect(() => {
+    const receive = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.source !== frame.current?.contentWindow) return;
+      if (event.data?.channel !== CHANNEL) return;
+      if (event.data.type === "ready") setLoad("ready");
+      if (event.data.type === "error") {
+        setLoad("error");
+        setError(String(event.data.message ?? ""));
+      }
+    };
+    window.addEventListener("message", receive);
+    return () => window.removeEventListener("message", receive);
+  }, []);
+
+  useEffect(() => {
+    if (load !== "ready") return;
+    frame.current?.contentWindow?.postMessage(
+      { channel: CHANNEL, type: "set-state", payload: JSON.parse(message) },
+      window.location.origin,
+    );
+  }, [message, load]);
+
+  const more = crew.length - MAX_AVATARS;
+
   return (
-    <div className={styles.placeholder}>
-      <span className={styles.title}>🚧 준비 중인 자리</span>
-      <p className={styles.body}>
-        문이 열리면 작업자가 한 명씩 들어가 작업하는 모습을 여기서 화면으로
-        보여줄 예정이에요 (천호 님 담당). 라우팅과 실시간 데이터 연결은 끝나
-        있어서, 화면만 붙이면 아래 값이 그대로 들어갑니다.
+    <div className={styles.wrap}>
+      <div className={styles.scene}>
+        <iframe
+          ref={frame}
+          src={SRC}
+          title="안전 출입 게이트 3D 시뮬레이션"
+          className={styles.frame}
+          allow="fullscreen"
+        />
+        {load === "error" ? (
+          <div className={styles.overlay} role="alert">
+            <strong>3D 화면을 불러오지 못했어요.</strong>
+            <span>아래 참여자 위치는 그대로 맞아요. {error}</span>
+          </div>
+        ) : null}
+      </div>
+
+      {/* 장면은 그림만 그립니다. 누가 어디 있는지는 글자로 따로 적습니다 —
+          3D 가 안 뜨는 기기에서도, 화면을 못 보는 사람에게도 같은 정보가 갑니다. */}
+      <ul className={styles.crew} aria-label="참여자 위치">
+        {crew.length === 0 ? (
+          <li className={styles.none}>아직 사원증을 찍은 사람이 없어요.</li>
+        ) : (
+          crew.map((c, i) => (
+            <li
+              key={`${c.name}-${i}`}
+              className={styles.person}
+              data-position={c.position}
+            >
+              <span className={styles.dot} aria-hidden />
+              <span className={styles.name}>{c.name}</span>
+              <span className={styles.where}>{POSITION_LABEL[c.position]}</span>
+            </li>
+          ))
+        )}
+      </ul>
+
+      <p className={styles.note}>
+        서버가 판정한 결과를 그림으로 다시 보여주는 화면이에요. 여기서 문이 열려
+        보여도 실제 문을 여닫지는 않아요.
+        {more > 0
+          ? ` 화면에는 ${MAX_AVATARS}명까지만 그려지고, 나머지 ${more}명은 위 목록에 있어요.`
+          : ""}
       </p>
-      {/* 지금 이 자리로 들어오고 있는 값. 붙일 때 확인용으로 남겨 둡니다. */}
-      <dl className={styles.props}>
-        <dt>state</dt>
-        <dd>{props.state}</dd>
-        <dt>인원</dt>
-        <dd>
-          {props.entered} / {props.required}명
-        </dd>
-        <dt>참여자</dt>
-        <dd>{props.members.join(", ") || "—"}</dd>
-        <dt>경과</dt>
-        <dd>
-          {props.elapsed}
-          {props.progress !== null ? ` (${Math.round(props.progress * 100)}%)` : ""}
-        </dd>
-      </dl>
     </div>
   );
 }

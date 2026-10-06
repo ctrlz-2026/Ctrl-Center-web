@@ -1,41 +1,125 @@
-/* 게이트 시뮬레이션 자리. 천호 님 화면이 오면 통째로 바뀝니다. */
+/* 게이트 3D 시뮬레이션(Unity WebGL iframe)과 그 아래 참여자 위치 목록. */
 
-.placeholder {
+.wrap {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 20px;
-  border-radius: var(--radius-12);
-  background: var(--ct-page-bg);
-  box-shadow: var(--line-inset-normal);
+  gap: 12px;
 }
 
-.title {
+/* 장면은 어두운 배경으로 그려져 있어, 불러오는 동안에도 같은 색을 깔아 둡니다.
+   높이를 비율로 잡아야 불러오기 전후로 아래 내용이 밀리지 않습니다. */
+.scene {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  min-height: 280px;
+  max-height: 560px;
+  border-radius: var(--radius-12);
+  overflow: hidden;
+  background: var(--ct-kiosk-surface);
+}
+
+.frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px;
+  text-align: center;
+  background: var(--ct-kiosk-surface);
+  color: var(--static-white);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.overlay strong {
   font-size: 15px;
+  font-weight: 600;
+}
+
+.overlay span {
+  opacity: 0.72;
+  word-break: break-all;
+}
+
+.crew {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.person {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--ct-control-sm);
+  padding: 0 12px;
+  border-radius: var(--radius-8);
+  background: var(--ct-page-bg);
+  box-shadow: var(--line-inset-normal);
+  font-size: 13px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--label-assistive);
+}
+
+.name {
   font-weight: 600;
   color: var(--label-normal);
 }
 
-.body {
+.where {
+  color: var(--label-alternative);
+}
+
+/* 위치는 색만으로 구분하지 않습니다 — 옆에 글자가 항상 같이 있습니다. */
+.person[data-position="in"] .dot {
+  background: var(--primary-normal);
+}
+
+.person[data-position="verified"] .dot {
+  background: var(--green-50);
+}
+
+.person[data-position="blocked"] {
+  background: var(--ct-tint-red);
+}
+
+.person[data-position="blocked"] .dot {
+  background: var(--red-50);
+}
+
+.none {
   font-size: 13px;
+  color: var(--label-alternative);
+}
+
+.note {
+  margin: 0;
+  font-size: 12px;
   line-height: 1.6;
   color: var(--label-alternative);
 }
 
-.props {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 16px;
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: var(--label-alternative);
-}
-
-.props dt {
-  font-weight: 600;
-}
-
-.props dd {
-  margin: 0;
-  font-variant-numeric: tabular-nums;
+@media (max-width: 599px) {
+  .scene {
+    aspect-ratio: 4 / 3;
+    min-height: 240px;
+  }
 }

@@ -12,7 +12,7 @@ import styles from "./page.module.css";
 
 /* 전체 현황(W4)에서 진행중 작업을 눌러 들어오는 상세 페이지.
  *
- * 위: 세션 정보 / 아래: 게이트 시뮬레이션 자리(천호 님 담당, components/GateSimulation).
+ * 위: 세션 정보 / 아래: 게이트 3D 시뮬레이션(천호 님의 Unity 빌드, components/GateSimulation).
  * 값은 관제 실시간 스트림에서 오므로 키오스크에서 상태가 바뀌면 이 화면도
  * 새로고침 없이 따라 바뀝니다.
  *
@@ -107,6 +107,7 @@ export default function SessionDetailPage() {
           required={Number.isFinite(required) ? required : 0}
           entered={Number.isFinite(entered) ? entered : 0}
           members={session.members}
+          crew={session.crew}
           elapsed={session.elapsed}
           progress={session.progress}
         />

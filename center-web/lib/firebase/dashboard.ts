@@ -3,7 +3,7 @@ import "server-only";
 import { adminDb } from "./admin";
 import { seoulDate } from "./bundle";
 import { loadMasters } from "./queries";
-import type { Anomaly, SiteBoardTile, SiteStatus } from "@/lib/types";
+import type { Anomaly, CrewMember, SiteBoardTile, SiteStatus } from "@/lib/types";
 
 /* 관제 화면 데이터. 전부 gateSessions · approvalRequests 에서 계산합니다.
  *
@@ -93,6 +93,9 @@ interface SessionDoc {
   endedAt: string | null;
   members: string[];
   enteredCount?: number;
+  /** 젯슨 판정 세션에만 있습니다. 키오스크 시연 세션은 인원 수만 남깁니다. */
+  verifiedEmpNos?: string[];
+  enteredEmpNos?: string[];
   passedFirstTry?: boolean;
   blockedReason?: string;
   /** 젯슨 판정에서 막힌 사람. 미등록 사원증이면 없습니다. */
@@ -133,6 +136,28 @@ export function startedRequestIdsOf(sessions: { state: string; approvalRequestId
       .filter((s) => s.state !== "blocked" && s.approvalRequestId)
       .map((s) => String(s.approvalRequestId)),
   );
+}
+
+/** 참여자 한 명씩 지금 문의 어느 쪽에 있는지.
+ *
+ *  젯슨이 판정한 세션은 누가 검증을 통과했고 누가 들어갔는지 사번으로 남습니다.
+ *  키오스크 시연으로 연 세션은 "몇 명 들어갔다"만 있어, 참여자 순서대로 앞에서부터
+ *  들어간 것으로 봅니다 (시연은 전원이 한 번에 들어가므로 실제와 어긋나지 않습니다). */
+function crewOf(s: SessionDoc, nameOf: (empNo: string) => string): CrewMember[] {
+  const members = s.members ?? [];
+  const entered = Array.isArray(s.enteredEmpNos) ? new Set(s.enteredEmpNos) : null;
+  const verified = new Set(s.verifiedEmpNos ?? []);
+  return members.map((empNo, i) => ({
+    name: nameOf(empNo),
+    position:
+      s.state === "blocked" && s.blockedEmpNo === empNo
+        ? "blocked"
+        : (entered ? entered.has(empNo) : i < (s.enteredCount ?? 0))
+          ? "in"
+          : verified.has(empNo)
+            ? "verified"
+            : "out",
+  }));
 }
 
 export async function loadDashboard(): Promise<DashboardData> {
@@ -225,6 +250,7 @@ export async function loadDashboard(): Promise<DashboardData> {
       headcount: `${s.enteredCount ?? 0} / ${wc?.requiredHeadcount ?? s.members.length}명`,
       work: `${s.workCode} ${wc?.name ?? ""}`.trim(),
       members: (s.members ?? []).map(nameOf),
+      crew: crewOf(s, nameOf),
       scheduleNote: scheduleNote(s.scheduledAt, s.startedAt),
       startedAtLabel: hhmm.format(startedAtDate),
       expectedEndLabel:

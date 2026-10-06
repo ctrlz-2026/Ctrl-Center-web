@@ -361,6 +361,18 @@ export const SITE_STATUS_ACCENT: Record<SiteStatusState, string | undefined> = {
  *  문열림」「업무 종료」「확인 처리」를 눌렀는데, 게이트 기기 인증이 들어가면서
  *  현장 진행은 **키오스크가 맡는 것**으로 옮겼습니다. 관제는 보는 화면이고,
  *  문을 여닫는 건 문 앞에서 합니다. */
+/** 작업 참여자 한 명이 지금 문의 어느 쪽에 있는지. 게이트 3D 시뮬레이션이
+ *  사람을 어디에 세울지 정하는 데 씁니다.
+ *
+ *  - `out` 아직 검증 전  - `verified` 검증 통과, 문 앞  - `in` 안에서 작업 중
+ *  - `blocked` 검증에서 막힘 */
+export type CrewPosition = "out" | "verified" | "in" | "blocked";
+
+export interface CrewMember {
+  name: string;
+  position: CrewPosition;
+}
+
 export interface SiteStatus {
   /** 표의 행 키. 같은 작업장에 승인 대기와 진행중이 동시에 있을 수 있어
    *  작업장+작업명 조합으로는 유일하지 않습니다. */
@@ -380,6 +392,9 @@ export interface SiteStatus {
   work: string;
   /** 참여 인원 이름. 진행중 작업만 있습니다. */
   members: string[];
+  /** 참여 인원별 위치 (members 와 같은 순서). 진행중 작업만 있습니다.
+   *  저장된 값이 아니라 세션의 검증·입장 기록에서 매번 계산합니다. */
+  crew?: CrewMember[];
   requestId?: string;
   sessionId?: string;
   /** 예정 시각 대비 언제 시작했는지. 진입을 막지는 않고 기록만 남깁니다. */

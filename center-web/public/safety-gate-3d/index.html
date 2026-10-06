@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>SafetyGate3D</title>
+  <style>
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #09131b; }
+    #unity-canvas { display: block; width: 100%; height: 100%; outline: none; }
+    #loading { position: fixed; inset: auto 0 0; height: 3px; background: #142a35; }
+    #progress { width: 0; height: 100%; background: #38d6a7; transition: width .15s ease; }
+    #load-status { position:fixed; inset:45% 24px auto; color:#cce5ef; text-align:center; font:14px system-ui,sans-serif; white-space:pre-wrap; }
+  </style>
+</head>
+<body>
+  <canvas id="unity-canvas" tabindex="-1"></canvas>
+  <div id="loading"><div id="progress"></div></div>
+  <div id="load-status" role="status">3D 장면 불러오는 중…</div>
+  <script>
+    const canvas = document.getElementById('unity-canvas');
+    const buildUrl = 'Build';
+    const loadStatus = document.getElementById('load-status');
+    const showLoadError = error => {
+      const message = '3D 장면을 불러오지 못했습니다.\n' + String(error);
+      loadStatus.textContent = message;
+      window.parent.postMessage({channel:'safety-gate-3d',type:'error',message}, location.origin);
+      console.error('SafetyGate 3D failed to load:', error);
+    };
+    const config = {
+      dataUrl: buildUrl + '/WebGL.data.br',
+      frameworkUrl: buildUrl + '/WebGL.framework.js.br',
+      codeUrl: buildUrl + '/WebGL.wasm.br',
+      streamingAssetsUrl: 'StreamingAssets',
+      companyName: "DefaultCompany",
+      productName: "SafetyGate3D",
+      productVersion: "3.0.1",
+      matchWebGLToCanvasSize: true,
+      cacheControl: () => 'no-store',
+      devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.5)
+    };
+    const script = document.createElement('script');
+    script.src = buildUrl + '/WebGL.loader.js';
+    script.onerror = () => showLoadError('WebGL loader 파일을 확인해주세요.');
+    script.onload = () => createUnityInstance(canvas, config, progress => {
+      document.getElementById('progress').style.width = (progress * 100) + '%';
+      loadStatus.textContent = '3D 장면 불러오는 중… ' + Math.round(progress * 100) + '%';
+    }).then(instance => {
+      window.unityInstance = instance;
+      if (window.__safetyGatePendingState) {
+        instance.SendMessage('SafetyGate3D', 'ApplyDashboardState', JSON.stringify(window.__safetyGatePendingState));
+        window.__safetyGatePendingState = null;
+      }
+      document.getElementById('loading').remove();
+      loadStatus.remove();
+    }).catch(showLoadError);
+    document.body.appendChild(script);
+  </script>
+</body>
+</html>
