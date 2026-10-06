@@ -2,7 +2,7 @@ import "server-only";
 
 import { adminDb } from "./admin";
 import { seoulDate } from "./bundle";
-import { elapsedLabel, startedRequestIdsOf } from "./dashboard";
+import { crewOf, elapsedLabel, startedRequestIdsOf } from "./dashboard";
 import { loadMasters } from "./queries";
 import type { KioskSignal, KioskStatus } from "@/lib/kiosk-types";
 
@@ -281,6 +281,17 @@ export async function loadKioskStatus(
     required,
     entered: Number(s.enteredCount ?? 0),
     members: (s.members ?? []).map(nameOf),
+    crew: crewOf(
+      {
+        state: String(s.state),
+        members: s.members ?? [],
+        enteredCount: Number(s.enteredCount ?? 0),
+        enteredEmpNos: Array.isArray(s.enteredEmpNos) ? s.enteredEmpNos : undefined,
+        verifiedEmpNos: Array.isArray(s.verifiedEmpNos) ? s.verifiedEmpNos : undefined,
+        blockedEmpNo: s.blockedEmpNo ?? null,
+      },
+      nameOf,
+    ),
     selected,
     // 젯슨 판정 세션에만 있는 값들. 키오스크 시연 세션에는 없습니다.
     message: s.message ? String(s.message) : undefined,

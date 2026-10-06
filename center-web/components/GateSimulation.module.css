@@ -18,6 +18,16 @@
   background: var(--ct-kiosk-surface);
 }
 
+/* 키오스크용. 벽에 붙은 가로 화면에서는 장면이 화면을 다 차지하면 정작
+   "지금 할 일"(사원증을 대주세요 · 작업 종료)이 아래로 밀려 안 보입니다.
+   장면은 화면 높이의 3분의 1 정도만 쓰고, 할 일이 스크롤 없이 보이게 합니다. */
+.sceneBare {
+  aspect-ratio: auto;
+  height: clamp(200px, 34vh, 380px);
+  min-height: 0;
+  max-height: none;
+}
+
 .frame {
   display: block;
   width: 100%;

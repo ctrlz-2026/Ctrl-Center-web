@@ -63,6 +63,9 @@ export interface GateSimulationProps {
   elapsed: string;
   /** 경과 / 예상시간. 1 을 넘으면 초과. 예상시간이 없으면 null */
   progress: number | null;
+  /** 장면만 그립니다. 참여자 목록과 안내 문구는 그리지 않습니다 — 키오스크처럼
+   *  같은 정보를 화면이 이미 크게 보여주는 곳에서 씁니다. */
+  bare?: boolean;
 }
 
 /** Unity 가 아는 작업 상태에 우리 상태를 맞춥니다. */
@@ -152,19 +155,58 @@ export function GateSimulation(props: GateSimulationProps) {
     return () => window.removeEventListener("message", receive);
   }, []);
 
+  /* 장면이 지금 각 자리를 어떤 상태로 알고 있는지. */
+  const shown = useRef<Record<string, string> | null>(null);
+
   useEffect(() => {
     if (load !== "ready") return;
-    frame.current?.contentWindow?.postMessage(
-      { channel: CHANNEL, type: "set-state", payload: JSON.parse(message) },
-      window.location.origin,
-    );
+    type Scene = { status: string; doorOpen: boolean; workers: { id: string; state: string }[] };
+    const target = JSON.parse(message) as Scene;
+    const post = (payload: Scene) => {
+      frame.current?.contentWindow?.postMessage(
+        { channel: CHANNEL, type: "set-state", payload },
+        window.location.origin,
+      );
+      shown.current = Object.fromEntries(payload.workers.map((w) => [w.id, w.state]));
+    };
+
+    /* 보고 있는 중에 "처음 보는 사람이 이미 안에 있다"는 결과가 오면 풀어서 재생합니다.
+
+       젯슨이 판정할 때는 사원증 → 검증 → 입장이 차례로 와서 장면이 알아서
+       걸어 들어갑니다. 그런데 키오스크 시연 버튼은 결과를 한 번에 냅니다 —
+       "2명 모두 안에 있음". 그대로 넘기면 장면은 처음 보는 사람을 제자리에
+       놓기만 해서, 문은 닫힌 채 사람이 안에 갑자기 나타납니다.
+
+       그래서 문 앞에 먼저 세웠다가(문 열림) 잠시 뒤 실제 상태를 보냅니다.
+       결과를 바꾸는 것이 아니라 **이미 난 결과를 보여주는 순서**만 정하는 것입니다.
+
+       화면을 처음 열었을 때는 하지 않습니다 — 이미 작업 중인 현장을 열었는데
+       사람들이 다시 걸어 들어가면 지금 막 들어간 것처럼 보입니다. */
+    const seen = shown.current;
+    const arriving = seen
+      ? target.workers.filter((w) => w.state === "IN" && seen[w.id] === undefined)
+      : [];
+    if (arriving.length === 0) {
+      post(target);
+      return;
+    }
+    post({
+      ...target,
+      status: "READY",
+      doorOpen: true,
+      workers: target.workers.map((w) =>
+        arriving.includes(w) ? { ...w, state: "VERIFIED" } : w,
+      ),
+    });
+    const t = setTimeout(() => post(target), 1600);
+    return () => clearTimeout(t);
   }, [message, load]);
 
   const more = crew.length - MAX_AVATARS;
 
   return (
     <div className={styles.wrap}>
-      <div className={styles.scene}>
+      <div className={props.bare ? `${styles.scene} ${styles.sceneBare}` : styles.scene}>
         <iframe
           ref={frame}
           src={SRC}
@@ -180,33 +222,37 @@ export function GateSimulation(props: GateSimulationProps) {
         ) : null}
       </div>
 
-      {/* 장면은 그림만 그립니다. 누가 어디 있는지는 글자로 따로 적습니다 —
-          3D 가 안 뜨는 기기에서도, 화면을 못 보는 사람에게도 같은 정보가 갑니다. */}
-      <ul className={styles.crew} aria-label="참여자 위치">
-        {crew.length === 0 ? (
-          <li className={styles.none}>아직 사원증을 찍은 사람이 없어요.</li>
-        ) : (
-          crew.map((c, i) => (
-            <li
-              key={`${c.name}-${i}`}
-              className={styles.person}
-              data-position={c.position}
-            >
-              <span className={styles.dot} aria-hidden />
-              <span className={styles.name}>{c.name}</span>
-              <span className={styles.where}>{POSITION_LABEL[c.position]}</span>
-            </li>
-          ))
-        )}
-      </ul>
+      {props.bare ? null : (
+        <>
+          {/* 장면은 그림만 그립니다. 누가 어디 있는지는 글자로 따로 적습니다 —
+              3D 가 안 뜨는 기기에서도, 화면을 못 보는 사람에게도 같은 정보가 갑니다. */}
+          <ul className={styles.crew} aria-label="참여자 위치">
+            {crew.length === 0 ? (
+              <li className={styles.none}>아직 사원증을 찍은 사람이 없어요.</li>
+            ) : (
+              crew.map((c, i) => (
+                <li
+                  key={`${c.name}-${i}`}
+                  className={styles.person}
+                  data-position={c.position}
+                >
+                  <span className={styles.dot} aria-hidden />
+                  <span className={styles.name}>{c.name}</span>
+                  <span className={styles.where}>{POSITION_LABEL[c.position]}</span>
+                </li>
+              ))
+            )}
+          </ul>
 
-      <p className={styles.note}>
-        서버가 판정한 결과를 그림으로 다시 보여주는 화면이에요. 여기서 문이 열려
-        보여도 실제 문을 여닫지는 않아요.
-        {more > 0
-          ? ` 화면에는 ${MAX_AVATARS}명까지만 그려지고, 나머지 ${more}명은 위 목록에 있어요.`
-          : ""}
-      </p>
+          <p className={styles.note}>
+            서버가 판정한 결과를 그림으로 다시 보여주는 화면이에요. 여기서 문이 열려
+            보여도 실제 문을 여닫지는 않아요.
+            {more > 0
+              ? ` 화면에는 ${MAX_AVATARS}명까지만 그려지고, 나머지 ${more}명은 위 목록에 있어요.`
+              : ""}
+          </p>
+        </>
+      )}
     </div>
   );
 }

@@ -143,7 +143,13 @@ export function startedRequestIdsOf(sessions: { state: string; approvalRequestId
  *  젯슨이 판정한 세션은 누가 검증을 통과했고 누가 들어갔는지 사번으로 남습니다.
  *  키오스크 시연으로 연 세션은 "몇 명 들어갔다"만 있어, 참여자 순서대로 앞에서부터
  *  들어간 것으로 봅니다 (시연은 전원이 한 번에 들어가므로 실제와 어긋나지 않습니다). */
-function crewOf(s: SessionDoc, nameOf: (empNo: string) => string): CrewMember[] {
+export function crewOf(
+  s: Pick<
+    SessionDoc,
+    "state" | "members" | "enteredCount" | "enteredEmpNos" | "verifiedEmpNos" | "blockedEmpNo"
+  >,
+  nameOf: (empNo: string) => string,
+): CrewMember[] {
   const members = s.members ?? [];
   const entered = Array.isArray(s.enteredEmpNos) ? new Set(s.enteredEmpNos) : null;
   const verified = new Set(s.verifiedEmpNos ?? []);

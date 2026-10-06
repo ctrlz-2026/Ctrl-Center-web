@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { GateSimulation } from "@/components/GateSimulation";
 import { playSignal, soundReady, unlockSound } from "@/lib/kiosk-sound";
 import type { KioskSignal, KioskStatus } from "@/lib/kiosk-types";
 import styles from "../../../page.module.css";
@@ -183,6 +184,38 @@ export function KioskLive({
       </div>
 
       <Steps phase={phase} step={status.step} blockedReason={status.blockedReason} />
+
+      {/* 문 열림을 보여주는 3D 장면 (천호 님의 Unity 빌드).
+
+          실물 도어락 대신 **화면이 문**입니다 — 검증 인원이 차면 여기서 문이
+          열리고 사람이 한 명씩 들어갑니다. 판정은 서버가 하고 이 장면은 그 결과를
+          재생합니다.
+
+          아래 단계별 화면(ready · blocked · working) **바깥**에 한 번만 둡니다.
+          단계가 바뀔 때마다 새로 그리면 장면을 처음부터 다시 받아야 하고(약 11MB),
+          걸어 들어가던 사람도 끊깁니다. 작업이 끝나면 내립니다. */}
+      {phase !== "closed" ? (
+        <GateSimulation
+          bare
+          state={
+            phase === "working"
+              ? "working"
+              : phase === "blocked"
+                ? "blocked"
+                : status.step === "unlocking"
+                  ? "unlocked"
+                  : "verifying"
+          }
+          siteName={siteName}
+          work={`${task.code} ${task.title}`}
+          required={status.required}
+          entered={status.entered}
+          members={status.members}
+          crew={status.crew}
+          elapsed={status.elapsed ?? ""}
+          progress={null}
+        />
+      ) : null}
 
       {phase === "ready" ? (
         <div className={`${styles.stage} ${status.step === "unlocking" ? styles.stageWorking : ""}`}>

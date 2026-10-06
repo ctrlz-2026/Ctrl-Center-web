@@ -12,12 +12,21 @@
  *  - `closed`  작업이 끝남 */
 export type KioskPhase = "ready" | "blocked" | "working" | "closed";
 
+/** 참여자 한 명이 문의 어느 쪽에 있는지. 관제의 CrewMember 와 같은 모양입니다
+ *  (lib/types.ts). 게이트 3D 시뮬레이션이 사람을 세울 자리를 정하는 데 씁니다. */
+export interface KioskCrewMember {
+  name: string;
+  position: "out" | "verified" | "in" | "blocked";
+}
+
 export interface KioskStatus {
   phase: KioskPhase;
   sessionId: string | null;
   required: number;
   entered: number;
   members: string[];
+  /** 참여자별 위치 (members 와 같은 순서). 세션이 생긴 뒤에만 있습니다. */
+  crew?: KioskCrewMember[];
   /** HH:mm */
   startedAtLabel?: string;
   expectedEndLabel?: string;
