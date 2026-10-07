@@ -6,6 +6,8 @@ import { GateSimulation } from "@/components/GateSimulation";
 import { playSignal, soundReady, unlockSound } from "@/lib/kiosk-sound";
 import { preloadVoice, promptFor, say, voiceFor } from "@/lib/kiosk-voice";
 import type { KioskSignal, KioskStatus } from "@/lib/kiosk-types";
+import { nextPersonNotice } from "@/lib/kiosk-next-person";
+import { kioskGuidance } from "@/lib/kiosk-guidance";
 import { KioskCamera } from "./KioskCamera";
 import styles from "../../../page.module.css";
 
@@ -59,14 +61,6 @@ function charOfKey(code: string): string | null {
 /** 알림음이 끝난 뒤에 말을 시작합니다. 가장 긴 알림음(문 열림 · 차단)이 0.6초쯤입니다. */
 const VOICE_AFTER_BEEP_MS = 650;
 
-/** 문 앞 단계별 안내. 서버 문구(message)가 있으면 그걸 본문에 씁니다. */
-const STEP_TITLE: Record<NonNullable<KioskStatus["step"]>, string> = {
-  tagging: "사원증을 대주세요",
-  face: "카메라를 봐주세요",
-  verifying: "보호구를 확인하고 있어요",
-  unlocking: "문이 열렸어요 · 들어가세요",
-};
-
 /** 단계 카드 맨 위의 사원증 그림. 카메라 화면을 못 띄울 때도 같은 그림을 씁니다. */
 const STAGE_ICON = (
   <span className={styles.stageIcon} aria-hidden="true">
@@ -93,6 +87,11 @@ export function KioskLive({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
+  const [tagReading, setTagReading] = useState(false);
+  const [longStage, setLongStage] = useState<string | null>(null);
+  const stageKey = `${status.step ?? "tagging"}:${status.signal?.at ?? ""}`;
+  const takingLong = longStage === stageKey;
   /* 마지막으로 상태가 바뀐 시각. 오래 안 바뀌면 폴링을 멈춥니다. */
   const [changedAt, setChangedAt] = useState(() => Date.now());
   const [paused, setPaused] = useState(false);
@@ -114,10 +113,11 @@ export function KioskLive({
   }, []);
 
   const refresh = useCallback(async () => {
+    try {
     const res = await fetch(`/api/kiosk/${gateId}/status?request=${task.requestId}`, {
       cache: "no-store",
     });
-    if (!res.ok) return;
+    if (!res.ok) throw new Error("status unavailable");
     const next = (await res.json()) as KioskStatus;
     const prev = prevRef.current;
     prevRef.current = next;
@@ -145,7 +145,18 @@ export function KioskLive({
     if (line) say(line, sound ? VOICE_AFTER_BEEP_MS : 0);
 
     setStatus(next);
+    setConnectionError(false);
+    } catch {
+      setConnectionError(true);
+      setPaused(true); // Stop retries instead of accumulating failed DB reads.
+    }
   }, [gateId, task.requestId]);
+
+  useEffect(() => {
+    if (status.step !== "face" && status.step !== "verifying") return;
+    const timer = setTimeout(() => setLongStage(stageKey), 20_000);
+    return () => clearTimeout(timer);
+  }, [status.step, stageKey]);
 
   const phaseNow = status.phase;
   useEffect(() => {
@@ -196,6 +207,7 @@ export function KioskLive({
   async function post(path: string, body: unknown) {
     setBusy(true);
     setError(null);
+    try {
     const res = await fetch(`/api/kiosk/${gateId}/${path}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -206,8 +218,14 @@ export function KioskLive({
       setError(j?.error ?? "처리하지 못했어요.");
     }
     await refresh();
+    } catch {
+      setError("요청 결과를 확인하지 못했습니다. 중복해서 누르지 말고 연결 상태를 확인하세요.");
+      setConnectionError(true);
+      setPaused(true);
+    } finally {
     setBusy(false);
     setConfirmEnd(false);
+    }
   }
 
   /* ── 사원증 리더 ────────────────────────────────────────────────────────
@@ -218,6 +236,10 @@ export function KioskLive({
   const onCard = useCallback(
     async (uid: string) => {
       const now = prevRef.current;
+      if (paused || connectionError) {
+        setError("현재 진행 상태 확인이 멈춰 있습니다. 아래 연결 확인 버튼을 먼저 눌러 주세요.");
+        return;
+      }
       if (now.phase !== "ready" || tagBusy.current) return;
       if (now.step === "unlocking") {
         setError("문이 열려 있어요. 들어가세요.");
@@ -228,6 +250,7 @@ export function KioskLive({
         return;
       }
       tagBusy.current = true;
+      setTagReading(true);
       setError(null);
       const res = await fetch(`/api/kiosk/${gateId}/tag`, {
         method: "POST",
@@ -243,8 +266,9 @@ export function KioskLive({
       // 결과(얼굴 확인으로 넘어감 · 막힘)는 상태를 다시 읽어 화면과 소리로 알립니다.
       await refresh();
       tagBusy.current = false;
+      setTagReading(false);
     },
-    [gateId, task.requestId, refresh],
+    [gateId, task.requestId, refresh, paused, connectionError],
   );
 
   useEffect(() => {
@@ -288,17 +312,34 @@ export function KioskLive({
   }
 
   const phase = status.phase;
+  const nextPerson = nextPersonNotice(status);
+  const guide = kioskGuidance(status);
 
   return (
     <div className={styles.wrap}>
       <div className={styles.head}>
         <span className={styles.eyebrow}>{siteName}</span>
+        <span className={styles.eyebrow}>게이트 {gateId.replace("gate-", "").toUpperCase()} · 필요 인원 {status.required}명</span>
         <h1 className={styles.title}>
           {task.code} {task.title}
         </h1>
       </div>
 
       <Steps phase={phase} step={status.step} blockedReason={status.blockedReason} />
+
+      {connectionError ? <p className={styles.error} role="alert">서버 연결을 확인하지 못했습니다. 아래는 마지막 확인 상태입니다. 아직 입장하지 말고 ‘연결 상태 확인’을 눌러 주세요.</p> : null}
+      {busy || tagReading ? <p className={styles.stageBody} role="status">{tagReading ? "사원증을 읽고 있습니다. 다시 태그하지 말고 잠시 기다려 주세요." : "요청을 처리하고 있습니다. 버튼을 다시 누르지 마세요."}</p> : null}
+
+      {nextPerson ? (
+        <section role="status" aria-live="polite" style={{
+          padding: "24px", margin: "16px 0", borderRadius: "20px",
+          background: "#12382d", border: "2px solid #4ade80", textAlign: "center",
+        }}>
+          <div style={{ color: "#86efac", fontSize: "24px", fontWeight: 700 }}>{nextPerson.title}</div>
+          <div style={{ color: "white", fontSize: "30px", fontWeight: 700, margin: "12px 0" }}>{nextPerson.instruction}</div>
+          <div style={{ color: "#d1fae5", fontSize: "18px" }}>{nextPerson.progress}</div>
+        </section>
+      ) : null}
 
       {phase === "ready" ? (
         <div className={`${styles.stage} ${status.step === "unlocking" ? styles.stageWorking : ""}`}>
@@ -309,7 +350,11 @@ export function KioskLive({
           ) : (
             STAGE_ICON
           )}
-          <span className={styles.stageTitle}>{STEP_TITLE[status.step ?? "tagging"]}</span>
+          <span className={styles.stageTitle}>{guide.title}</span>
+          <p className={styles.stageBody}><strong>{guide.completed}</strong></p>
+          <p className={styles.stageBody}>{guide.action}</p>
+          {status.step === "verifying" ? <p className={styles.stageBody}><strong>필수 보호구: {task.requiredPpe.length ? task.requiredPpe.join(" · ") : "AI 확인 대상 없음"}</strong></p> : null}
+          {takingLong ? <p className={styles.stageWarn} role="status">확인이 평소보다 오래 걸리고 있습니다. 카드 재태그는 하지 마세요. 얼굴·보호구가 잘 보이는지 확인하고, 계속 멈춰 있으면 안전관리자에게 알려주세요.</p> : null}
           {/* 검증이 시작되면 서버가 정한 문구를 그대로 띄웁니다 — 기기와 화면이
               같은 말을 해야 합니다. 시작 전에는 무엇을 하면 되는지 안내합니다. */}
           {status.message && (status.tagged ?? 0) > 0 ? (
@@ -333,18 +378,18 @@ export function KioskLive({
                 <span className={styles.statValue}>
                   {status.verified ?? 0}/{status.required}
                 </span>
-                <span className={styles.statLabel}>검증 통과</span>
+                <span className={styles.statLabel}>얼굴·보호구 확인 완료</span>
               </span>
               <span className={styles.stat}>
                 <span className={styles.statValue}>
                   {status.entered}/{status.required}
                 </span>
-                <span className={styles.statLabel}>입장</span>
+                <span className={styles.statLabel}>서버에 기록된 입장</span>
               </span>
             </div>
           ) : null}
           {status.members.length > 0 ? (
-            <p className={styles.stageBody}>{status.members.join(" · ")}</p>
+            <p className={styles.stageBody}>참여 작업자: {status.members.join(" · ")}</p>
           ) : null}
           {!status.selected && (status.tagged ?? 0) === 0 ? (
             <p className={styles.stageWarn}>
@@ -357,7 +402,7 @@ export function KioskLive({
 
       {phase === "blocked" ? (
         <div className={`${styles.stage} ${styles.stageBlocked}`}>
-          <span className={styles.stageTitle}>입장이 막혔어요</span>
+          <span className={styles.stageTitle}>{guide.title}</span>
           <p className={styles.stageBody}>
             <strong>{status.blockedReason}</strong>
             <br />
@@ -365,18 +410,21 @@ export function KioskLive({
             {status.blockedAtLabel}
           </p>
           <p className={styles.stageBody}>
-            보호구를 갖추고 다시 시도하거나, 자격 문제라면 팀장에게 알려주세요.
+            {guide.action}
+            <br />
+            {guide.completed}
             이 기록은 관제 화면에 올라갔어요.
           </p>
           <button type="button" className={styles.primary} onClick={retry} disabled={busy}>
-            다시 시도
+            {busy ? "재시도 준비 중…" : "문제를 해결했어요 · 다시 시도"}
           </button>
         </div>
       ) : null}
 
       {phase === "working" ? (
         <div className={`${styles.stage} ${styles.stageWorking}`}>
-          <span className={styles.stageTitle}>문이 열렸어요 · 작업 중</span>
+          <span className={styles.stageTitle}>{guide.title}</span>
+          <p className={styles.stageBody}>{guide.action}</p>
           <div className={styles.stats}>
             <span className={styles.stat}>
               <span className={styles.statValue}>
@@ -399,7 +447,7 @@ export function KioskLive({
 
           {confirmEnd ? (
             <div className={styles.confirm}>
-              <span>모두 나왔나요? 작업을 종료합니다.</span>
+              <span>작업이 끝났고 모두 나온 것을 확인했나요? 확인한 뒤에만 종료하세요.</span>
               <div className={styles.confirmRow}>
                 <button
                   type="button"
@@ -407,7 +455,7 @@ export function KioskLive({
                   onClick={() => setConfirmEnd(false)}
                   disabled={busy}
                 >
-                  아니요
+                  아직 작업 중 · 취소
                 </button>
                 <button
                   type="button"
@@ -415,7 +463,7 @@ export function KioskLive({
                   onClick={() => post("end", { sessionId: status.sessionId })}
                   disabled={busy}
                 >
-                  네, 종료
+                  {busy ? "종료 처리 중…" : "모두 나왔어요 · 작업 종료"}
                 </button>
               </div>
             </div>
@@ -434,7 +482,8 @@ export function KioskLive({
 
       {phase === "closed" ? (
         <div className={`${styles.stage} ${styles.stageClosed}`}>
-          <span className={styles.stageTitle}>작업이 끝났어요</span>
+          <span className={styles.stageTitle}>{guide.title}</span>
+          <p className={styles.stageBody}>{guide.action}</p>
           <p className={styles.stageBody}>
             {status.startedAtLabel} 시작 · {status.durationLabel} 걸렸어요.
             <br />
@@ -444,7 +493,7 @@ export function KioskLive({
         </div>
       ) : null}
 
-      {error ? <p className={styles.error}>{error}</p> : null}
+      {error ? <p className={styles.error} role="alert">{error}</p> : null}
 
       {/* 브라우저가 소리를 막고 있을 때만 보입니다. 한 번 누르면 풀립니다. */}
       {!soundOn && phase !== "closed" ? (
@@ -455,7 +504,7 @@ export function KioskLive({
 
       {paused ? (
         <button type="button" className={styles.secondary} onClick={resume}>
-          한동안 변화가 없어 확인을 멈췄어요 · 눌러서 다시 확인
+          {connectionError ? "연결 상태 확인" : "조회 절약을 위해 확인을 멈췄어요 · 현재 상태 확인"}
         </button>
       ) : null}
 
@@ -497,14 +546,14 @@ export function KioskLive({
 
       <div className={styles.actions}>
         <Link href={`/kiosk/${gateId}`} className={styles.back}>
-          {phase === "closed" ? "처음으로" : "다른 작업 고르기"}
+          {phase === "closed" ? "작업 목록으로" : "다른 작업 고르기"}
         </Link>
       </div>
     </div>
   );
 }
 
-const STEP_LABELS = ["사원증", "얼굴", "보호구", "문 열림"];
+const STEP_LABELS = ["사원증 확인", "얼굴 확인", "보호구 확인", "입장 안내"];
 
 /** 막힌 이유가 어느 단계에서 걸린 것인지. 자격·배정은 사원증을 찍는 순간
  *  서버가 판정하므로 1단계, 얼굴은 2단계, 보호구는 3단계입니다. */
@@ -539,8 +588,10 @@ function Steps({
         <li
           key={label}
           className={`${styles.progressStep} ${
-            i < reached ? styles.progressDone : ""
+            (phase === "working" || phase === "closed" ? i < reached : i < reached - 1) ? styles.progressDone : ""
           } ${i === fail ? styles.progressFail : ""}`}
+          aria-current={phase === "ready" && i === reached - 1 ? "step" : undefined}
+          style={phase === "ready" && i === reached - 1 ? { outline: "2px solid #8fb0ff" } : undefined}
         >
           <span className={styles.progressDot}>{i + 1}</span>
           {label}
