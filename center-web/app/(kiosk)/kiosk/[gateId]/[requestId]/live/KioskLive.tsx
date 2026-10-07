@@ -251,7 +251,11 @@ export function KioskLive({
     const typed = { text: "", first: 0, last: 0 };
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.altKey || e.metaKey) return;
-      const now = performance.now();
+      /* 글자 사이 간격은 **키가 눌린 시각**(e.timeStamp)으로 잽니다. 이 코드가 불린
+         시각으로 재면, 화면이 잠깐 멈췄을 때(아래 3D 장면을 받는 동안 등) 밀려 있던
+         글자들이 늦게 한꺼번에 처리되면서 간격이 길었던 것처럼 보입니다. 그러면
+         번호 앞부분이 버려져 "등록되지 않은 사원증"이 됩니다. */
+      const now = e.timeStamp;
       if (e.key === "Enter" || e.code === "NumpadEnter") {
         const uid = typed.text;
         typed.text = "";
