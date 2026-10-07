@@ -89,7 +89,9 @@ export function KioskLive({
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
   const [tagReading, setTagReading] = useState(false);
-  const [takingLong, setTakingLong] = useState(false);
+  const [longStage, setLongStage] = useState<string | null>(null);
+  const stageKey = `${status.step ?? "tagging"}:${status.signal?.at ?? ""}`;
+  const takingLong = longStage === stageKey;
   /* 마지막으로 상태가 바뀐 시각. 오래 안 바뀌면 폴링을 멈춥니다. */
   const [changedAt, setChangedAt] = useState(() => Date.now());
   const [paused, setPaused] = useState(false);
@@ -151,11 +153,10 @@ export function KioskLive({
   }, [gateId, task.requestId]);
 
   useEffect(() => {
-    setTakingLong(false);
     if (status.step !== "face" && status.step !== "verifying") return;
-    const timer = setTimeout(() => setTakingLong(true), 20_000);
+    const timer = setTimeout(() => setLongStage(stageKey), 20_000);
     return () => clearTimeout(timer);
-  }, [status.step, status.signal?.at]);
+  }, [status.step, stageKey]);
 
   const phaseNow = status.phase;
   useEffect(() => {
