@@ -524,6 +524,35 @@
   background: rgba(51, 102, 255, 0.2);
 }
 
+/* ── 카메라 화면 (얼굴 · 보호구를 확인하는 동안만) ──────────── */
+.camera {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+/* 거울처럼 보여줍니다 — 오른쪽으로 움직이면 화면에서도 오른쪽으로 가야
+   자리를 맞추기 쉽습니다. */
+.cameraView {
+  display: block;
+  width: min(100%, 460px);
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-14);
+  background: #05070c;
+  box-shadow: 0 0 0 2px rgba(143, 176, 255, 0.5);
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.cameraNote {
+  max-width: 460px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.5);
+}
+
 .stageTitle {
   font-size: 30px;
   font-weight: 800;
