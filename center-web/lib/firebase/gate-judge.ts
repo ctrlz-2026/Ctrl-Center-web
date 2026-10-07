@@ -110,6 +110,10 @@ export async function applyEvents(
           : "이미 얼굴·보호구 확인을 마쳤습니다. 다른 작업자의 확인 또는 입장 안내를 기다려 주세요.";
         continue;
       }
+      if ([...tagged].some((other) => other !== empNo && !verified.has(other))) {
+        message = "앞 작업자의 얼굴·보호구 확인이 끝난 뒤 사원증을 태그해 주세요.";
+        continue;
+      }
       tagged.add(empNo); members.add(empNo); state = "face"; message = "얼굴을 확인하고 있습니다.";
       signal = "card_ok";
       continue;

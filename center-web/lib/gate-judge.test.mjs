@@ -104,3 +104,10 @@ test("closed sessions ignore delayed hardware events", async () => {
   assert.equal(response.state, "closed");
   assert.equal(response.unlock, false);
 });
+test("another card cannot replace the person currently being checked", async () => {
+  const f = fixture();
+  await f.observe("card_tag", { card_uid: "CARD1" });
+  const next = await f.observe("card_tag", { card_uid: "CARD2" });
+  assert.equal(next.headcount.tagged, 1);
+  assert.match(next.message, /앞 작업자/);
+});
