@@ -180,7 +180,7 @@ center-web/
       stream/requests/       SSE 실시간
       gate/events/           젯슨 수신구 (기기 키)
       gate/[gateId]/         번들 · 선택된 작업 · 얼굴 등록(사번 확인 · 완료 알림) · 얼굴 벡터 내려받기 (기기 키)
-      kiosk/[gateId]/        키오스크 화면용 (작업 선택 · 상태 · 종료 · 시연)
+      kiosk/[gateId]/        키오스크 화면용 (작업 선택 · 사원증 태그 · 상태 · 종료)
   components/                Button · Badge · Card · DataTable · Field · Logo · TopNav …
   lib/
     firebase/                client · admin · queries · dashboard · auth-guard · user

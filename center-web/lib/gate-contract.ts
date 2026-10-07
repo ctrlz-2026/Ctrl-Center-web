@@ -117,6 +117,20 @@ export interface GateContext {
   required_headcount: number;
   required_ppe: BundlePpe[];
   selected_at: string | null;
+  /**
+   * 이 작업의 검증이 지금 어디까지 왔는지. 검증이 아직 시작되지 않았으면 null.
+   *
+   * 키오스크 화면이 사원증을 읽는 경우(USB 리더가 키보드처럼 동작해 브라우저가
+   * 입력을 받음) 젯슨은 카드를 직접 보지 못합니다. 그때는 `pending` 을 보고
+   * **누구의 얼굴 · 보호구를 확인할 차례인지** 알 수 있습니다.
+   *   stage "face" → 그 사번으로 얼굴을 비교해 face_match 를 보냄
+   *   stage "ppe"  → 보호구를 확인해 ppe_check 를 보냄
+   */
+  session?: {
+    state: GateStateResponse["state"];
+    headcount: { required: number; tagged: number; verified: number; entered: number };
+    pending: { emp_no: string; stage: "face" | "ppe" }[];
+  } | null;
 }
 
 /**

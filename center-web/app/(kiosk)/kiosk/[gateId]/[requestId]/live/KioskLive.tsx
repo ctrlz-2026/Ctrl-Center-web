@@ -40,6 +40,21 @@ const POLL_WORKING_MS = 15_000;
 const POLL_ACTIVE_MS = 1_500;
 const ACTIVE_WINDOW_MS = 30_000;
 const IDLE_STOP_MS = 20 * 60_000;
+/** 리더가 치는 글자 사이의 간격. 리더는 한 글자에 0.01~0.03초, 사람 손은 0.1초
+ *  이상이라 이 값으로 둘을 가릅니다 — 사람이 키보드로 친 것을 사원증으로 보내면
+ *  "등록되지 않은 사원증"으로 작업이 막힙니다. */
+const READER_MS_PER_CHAR = 60;
+
+/** 눌린 **자리**로 글자를 정합니다. 젯슨의 입력기가 한글 상태면 `A` 가 `ㅁ` 으로
+ *  들어와 번호가 깨지는데, 자리(code)는 입력기와 상관없이 같습니다. */
+function charOfKey(code: string): string | null {
+  const digit = /^(?:Digit|Numpad)(\d)$/.exec(code);
+  if (digit) return digit[1];
+  const letter = /^Key([A-Z])$/.exec(code);
+  if (letter) return letter[1];
+  return code === "Minus" || code === "NumpadSubtract" ? "-" : null;
+}
+
 /** 알림음이 끝난 뒤에 말을 시작합니다. 가장 긴 알림음(문 열림 · 차단)이 0.6초쯤입니다. */
 const VOICE_AFTER_BEEP_MS = 650;
 
@@ -56,13 +71,11 @@ export function KioskLive({
   siteName,
   task,
   initial,
-  simulation,
 }: {
   gateId: string;
   siteName: string;
   task: Task;
   initial: KioskStatus;
-  simulation: boolean;
 }) {
   const [status, setStatus] = useState<KioskStatus>(initial);
   const [busy, setBusy] = useState(false);
@@ -185,6 +198,67 @@ export function KioskLive({
     setConfirmEnd(false);
   }
 
+  /* ── 사원증 리더 ────────────────────────────────────────────────────────
+     현장의 USB 리더는 **키보드처럼** 동작합니다. 카드를 대면 번호를 빠르게 치고
+     Enter 를 누릅니다. 입력 칸을 따로 두지 않고 화면 어디서든 받습니다 — 장갑 낀
+     손으로 칸을 먼저 눌러야 한다면 아무도 누르지 않습니다. */
+  const tagBusy = useRef(false);
+  const onCard = useCallback(
+    async (uid: string) => {
+      const now = prevRef.current;
+      if (now.phase !== "ready" || tagBusy.current) return;
+      if ((now.step ?? "tagging") !== "tagging") {
+        setError("앞 사람 확인이 끝난 뒤에 사원증을 대주세요.");
+        return;
+      }
+      tagBusy.current = true;
+      setError(null);
+      const res = await fetch(`/api/kiosk/${gateId}/tag`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ requestId: task.requestId, cardUid: uid }),
+      }).catch(() => null);
+      if (!res?.ok) {
+        const j = (await res?.json().catch(() => null)) as { error?: string } | null;
+        setError(j?.error ?? "사원증을 확인하지 못했어요. 다시 대주세요.");
+      }
+      // 결과(얼굴 확인으로 넘어감 · 막힘)는 상태를 다시 읽어 화면과 소리로 알립니다.
+      await refresh();
+      tagBusy.current = false;
+    },
+    [gateId, task.requestId, refresh],
+  );
+
+  useEffect(() => {
+    const typed = { text: "", first: 0, last: 0 };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      const now = performance.now();
+      if (e.key === "Enter" || e.code === "NumpadEnter") {
+        const uid = typed.text;
+        typed.text = "";
+        const fromReader =
+          uid.length >= 4 && now - typed.first <= uid.length * READER_MS_PER_CHAR + 100;
+        if (!fromReader) return;
+        // 버튼에 초점이 가 있으면 리더의 Enter 가 그 버튼을 누릅니다 (「작업 종료」 등).
+        e.preventDefault();
+        e.stopPropagation();
+        void onCard(uid);
+        return;
+      }
+      const ch = charOfKey(e.code);
+      if (!ch) return; // Shift 같은 보조 키는 흐름을 끊지 않습니다
+      if (now - typed.last > 300) {
+        typed.text = "";
+        typed.first = now;
+      }
+      typed.text = (typed.text + ch).slice(-32);
+      typed.last = now;
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [onCard]);
+
   /* 다시 시도 = 이 게이트에서 이 작업을 다시 "검증할 작업"으로 올립니다.
      서버는 선택 시각보다 앞선 차단을 지난 시도로 보고 대기 화면을 돌려줍니다. */
   async function retry() {
@@ -250,7 +324,7 @@ export function KioskLive({
           {status.members.length > 0 ? (
             <p className={styles.stageBody}>{status.members.join(" · ")}</p>
           ) : null}
-          {!status.selected && !simulation && (status.tagged ?? 0) === 0 ? (
+          {!status.selected && (status.tagged ?? 0) === 0 ? (
             <p className={styles.stageWarn}>
               이 게이트에 선택된 작업이 바뀌었어요. 다시 고르려면 아래
               「다른 작업 고르기」를 눌러주세요.
@@ -361,38 +435,6 @@ export function KioskLive({
         <button type="button" className={styles.secondary} onClick={resume}>
           한동안 변화가 없어 확인을 멈췄어요 · 눌러서 다시 확인
         </button>
-      ) : null}
-
-      {/* 젯슨 대역. KIOSK_SIMULATION=on 일 때만 보입니다. 실제 기기가 붙으면
-          이 칸은 사라지고, 위 화면이 기기의 검증 결과를 따라 바뀝니다. */}
-      {/* 젯슨이 이미 검증을 시작했으면(사원증이 찍혔으면) 숨깁니다 — 진짜 기기와
-          시연 버튼이 같은 작업을 동시에 진행시키면 세션이 둘로 갈립니다. */}
-      {simulation && phase === "ready" && (status.tagged ?? 0) === 0 ? (
-        <div className={styles.sim}>
-          <span className={styles.simLabel}>시연 모드 · 젯슨 대신 검증 결과 보내기</span>
-          <div className={styles.simRow}>
-            <button
-              type="button"
-              className={styles.simPass}
-              onClick={() => post("simulate", { requestId: task.requestId, outcome: "pass" })}
-              disabled={busy}
-            >
-              검증 통과 → 문 열기
-            </button>
-            <button
-              type="button"
-              className={styles.simBlock}
-              onClick={() => post("simulate", { requestId: task.requestId, outcome: "block" })}
-              disabled={busy}
-            >
-              보호구 미착용 → 차단
-            </button>
-          </div>
-          <span className={styles.simHint}>
-            자격은 서버가 실제로 확인해요 — 자격이 만료된 사람은 「검증 통과」를
-            눌러도 막힙니다.
-          </span>
-        </div>
       ) : null}
 
       {/* 문 열림을 보여주는 3D 장면 (천호 님의 Unity 빌드) — **참고용이라 맨 아래**.

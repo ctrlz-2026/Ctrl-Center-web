@@ -70,11 +70,6 @@ const md = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul",
 });
 
-/** 젯슨 대역(시연)을 켰는지. 실제 기기가 붙으면 끕니다.
- *  켜져 있을 때만 키오스크에 "검증 통과 / 실패" 시연 버튼이 나옵니다. */
-export function simulationEnabled(): boolean {
-  return process.env.KIOSK_SIMULATION === "on";
-}
 
 /** 설치 대상 게이트 목록. 키오스크를 어느 문에 붙일지 고르는 화면용입니다. */
 export async function loadKioskGates(): Promise<KioskGate[]> {

@@ -3,7 +3,6 @@ import {
   loadKioskGate,
   loadKioskRequest,
   loadKioskStatus,
-  simulationEnabled,
 } from "@/lib/firebase/kiosk";
 import { KioskLive } from "./KioskLive";
 
@@ -35,7 +34,6 @@ export default async function KioskLivePage({
       siteName={gate.siteName}
       task={task}
       initial={initial}
-      simulation={simulationEnabled()}
     />
   );
 }

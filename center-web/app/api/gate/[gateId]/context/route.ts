@@ -41,7 +41,24 @@ export async function GET(
   if (!doc.exists) return NextResponse.json(empty, { headers: { "Cache-Control": "no-store" } });
 
   const c = doc.data()!;
-  const masters = await loadMasters();
+  const [masters, sessionSnap] = await Promise.all([
+    loadMasters(),
+    adminDb().collection("gateSessions").doc(`${gateId}__${String(c.approvalRequestId)}`).get(),
+  ]);
+  // 검증이 어디까지 왔는지. 화면이 사원증을 읽은 경우 젯슨은 여기서 차례를 압니다.
+  const s = sessionSnap.data();
+  const verified = new Set<string>((s?.verifiedEmpNos ?? []).map(String));
+  const facePassed = new Set<string>((s?.facePassedEmpNos ?? []).map(String));
+  const session: GateContext["session"] = s
+    ? {
+        state: s.state,
+        headcount: s.headcount ?? { required: 0, tagged: 0, verified: 0, entered: 0 },
+        pending: ((s.taggedEmpNos ?? []) as unknown[])
+          .map(String)
+          .filter((e) => !verified.has(e))
+          .map((e) => ({ emp_no: e, stage: facePassed.has(e) ? ("ppe" as const) : ("face" as const) })),
+      }
+    : null;
   const wc = masters.workCodes.get(String(c.workCode));
   const body: GateContext = {
     gate_id: gateId,
@@ -54,6 +71,7 @@ export async function GET(
       yolo_class: masters.ppeYolo.get(p) ?? null,
     })),
     selected_at: String(c.selectedAt),
+    session,
   };
   return NextResponse.json(body, { headers: { "Cache-Control": "no-store" } });
 }
