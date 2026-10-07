@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GateSimulation } from "@/components/GateSimulation";
 import { playSignal, soundReady, unlockSound } from "@/lib/kiosk-sound";
+import { preloadVoice, promptFor, say, voiceFor } from "@/lib/kiosk-voice";
 import type { KioskSignal, KioskStatus } from "@/lib/kiosk-types";
 import styles from "../../../page.module.css";
 
@@ -39,6 +40,8 @@ const POLL_WORKING_MS = 15_000;
 const POLL_ACTIVE_MS = 1_500;
 const ACTIVE_WINDOW_MS = 30_000;
 const IDLE_STOP_MS = 20 * 60_000;
+/** 알림음이 끝난 뒤에 말을 시작합니다. 가장 긴 알림음(문 열림 · 차단)이 0.6초쯤입니다. */
+const VOICE_AFTER_BEEP_MS = 650;
 
 /** 문 앞 단계별 안내. 서버 문구(message)가 있으면 그걸 본문에 씁니다. */
 const STEP_TITLE: Record<NonNullable<KioskStatus["step"]>, string> = {
@@ -74,8 +77,15 @@ export function KioskLive({
 
   useEffect(() => {
     // 「입장 시작」을 누르고 넘어온 경우 이미 소리가 풀려 있습니다.
+    const ready = soundReady();
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSoundOn(soundReady());
+    setSoundOn(ready);
+    void preloadVoice();
+    // 화면이 열리면 지금 할 일을 먼저 말합니다 ("사원증을 대주세요").
+    const line = promptFor(initial);
+    if (ready && line) say(line, 300);
+    // 처음 한 번만. initial 은 서버가 그려준 첫 상태라 바뀌지 않습니다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const refresh = useCallback(async () => {
@@ -104,6 +114,10 @@ export function KioskLive({
       else if (next.phase === "closed") sound = "exit";
     }
     if (sound) playSignal(sound);
+
+    /* 말. 알림음이 "됐다 / 안 됐다"라면 말은 "그래서 이제 무엇을 하면 되는가"입니다. */
+    const line = voiceFor(prev, next);
+    if (line) say(line, sound ? VOICE_AFTER_BEEP_MS : 0);
 
     setStatus(next);
   }, [gateId, task.requestId]);
@@ -140,7 +154,12 @@ export function KioskLive({
   async function enableSound() {
     const ok = await unlockSound();
     setSoundOn(ok);
-    if (ok) playSignal("card_ok");
+    if (!ok) return;
+    // 켜졌다는 것을 바로 알 수 있게, 지금 할 일을 말합니다. 말할 것이 없는
+    // 단계(작업 중)에서는 짧은 알림음으로 대신합니다.
+    const line = promptFor(status);
+    if (line) say(line);
+    else playSignal("card_ok");
   }
 
   async function resume() {
@@ -334,7 +353,7 @@ export function KioskLive({
       {/* 브라우저가 소리를 막고 있을 때만 보입니다. 한 번 누르면 풀립니다. */}
       {!soundOn && phase !== "closed" ? (
         <button type="button" className={styles.soundButton} onClick={enableSound}>
-          알림음 켜기 — 통과·차단을 소리로 알려줘요
+          소리 켜기 — 음성 안내와 알림음이 나와요
         </button>
       ) : null}
 

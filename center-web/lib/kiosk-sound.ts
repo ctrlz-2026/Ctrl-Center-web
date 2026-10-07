@@ -57,6 +57,11 @@ function audio(): AudioContext | null {
   return ctx;
 }
 
+/** 음성 안내(kiosk-voice.ts)가 같은 출력을 씁니다. 잠금을 한 번만 풀면 됩니다. */
+export function soundContext(): AudioContext | null {
+  return audio();
+}
+
 /** 소리가 실제로 날 수 있는 상태인지. 막혀 있으면 화면에 켜기 버튼을 띄웁니다. */
 export function soundReady(): boolean {
   return audio()?.state === "running";
