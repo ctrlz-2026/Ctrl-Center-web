@@ -207,6 +207,10 @@ export function KioskLive({
     async (uid: string) => {
       const now = prevRef.current;
       if (now.phase !== "ready" || tagBusy.current) return;
+      if (now.step === "unlocking") {
+        setError("문이 열려 있어요. 들어가세요.");
+        return;
+      }
       if ((now.step ?? "tagging") !== "tagging") {
         setError("앞 사람 확인이 끝난 뒤에 사원증을 대주세요.");
         return;
