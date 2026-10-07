@@ -116,6 +116,40 @@
   color: var(--label-alternative);
 }
 
+/* 젯슨에서 등록이 끝나기를 기다리는 표시. 점이 천천히 깜빡입니다. */
+.faceWaiting {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--label-neutral);
+}
+
+.faceDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary-normal);
+  animation: faceWait 1.4s ease-in-out infinite;
+}
+
+@keyframes faceWait {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .faceDot {
+    animation: none;
+  }
+}
+
 /* 파일 고르기 칸은 숨기고 버튼으로 엽니다. 브라우저 기본 모양이 다른 버튼과
    높이·글꼴이 달라 한 줄에 놓으면 어긋납니다. */
 .fileInput {

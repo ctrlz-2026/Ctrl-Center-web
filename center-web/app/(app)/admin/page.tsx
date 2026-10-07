@@ -93,6 +93,24 @@ function AdminPageInner() {
     [apply],
   );
 
+  /* 다른 창에 다녀오면 목록을 새로 읽습니다. 얼굴 등록은 젯슨 쪽에서 끝나므로,
+     이 화면을 띄워둔 채 등록하고 돌아왔을 때 배지가 옛 값이면 안 됩니다.
+     주기적으로 묻지 않는 이유 — 이 목록은 한 번에 전 직원을 읽습니다. */
+  useEffect(() => {
+    const onVisible = () => {
+      if (!document.hidden) void reload();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [reload]);
+
+  /** 정보 관리 창에서 얼굴 등록 상태가 바뀌면 목록의 배지만 맞춥니다. */
+  const applyFace = useCallback((empNo: string, enrolled: boolean) => {
+    setAccounts((prev) =>
+      prev ? prev.map((a) => (a.empNo === empNo ? { ...a, faceEnrolled: enrolled } : a)) : prev,
+    );
+  }, []);
+
   async function decideSignup(
     s: SignupRequest,
     action: "approve" | "reject",
@@ -431,8 +449,10 @@ function AdminPageInner() {
           </CardHeader>
           <p className={styles.lead}>
             신청을 기다리지 않고 바로 등록해요. 등록하면 로그인 계정이 같이
-            만들어지고, 이어서 자격·작업 배정·얼굴 등록 여부를 넣는 창이 열려요.
-            사원증은 지금 넣어도 되고 나중에 넣어도 돼요.
+            만들어지고, 이어서 자격·작업 배정을 넣는 창이 열려요. 사원증은 지금
+            넣어도 되고 나중에 넣어도 돼요. <strong>얼굴은 여기서 넣지 않아요</strong>{" "}
+            — 등록한 사번으로 젯슨의 얼굴 등록 프로그램에서 찍으면 이 화면이
+            자동으로 &ldquo;얼굴 등록됨&rdquo;으로 바뀌어요.
           </p>
           <div className={styles.registerGrid}>
             <TextField
@@ -494,6 +514,7 @@ function AdminPageInner() {
               void reload();
             }}
             onClose={() => setEditing(null)}
+            onFaceChanged={applyFace}
           />
         ) : null}
 

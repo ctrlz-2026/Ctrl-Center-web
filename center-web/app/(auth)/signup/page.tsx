@@ -98,7 +98,7 @@ export default function SignupPage() {
             <div className={styles.fields}>
               <TextField
                 label="사번"
-                placeholder="202533690"
+                placeholder="숫자 9자리"
                 inputMode="numeric"
                 autoComplete="username"
                 value={empNo}

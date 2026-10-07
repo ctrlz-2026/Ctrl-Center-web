@@ -138,6 +138,9 @@ export interface AccountProfile {
   /** 얼굴이 등록됐는지. 벡터를 올렸거나, 젯슨이 "등록했다"고 알린 경우입니다. */
   faceEnrolled: boolean;
   faceEnrolledAt: string | null;
+  /** 누가 등록했는지. 젯슨의 등록 프로그램이 알렸으면 `gate:게이트ID`,
+   *  관리자가 화면에서 했으면 그 관리자의 사번입니다. */
+  faceEnrolledBy: string | null;
   /** 서버에 올라와 있는 얼굴 특징 벡터의 요약. **벡터 자체는 브라우저로 오지
    *  않습니다** — 몇 차원 · 몇 개 · 언제 올렸는지만 봅니다. 없으면 null. */
   faceTemplate: {

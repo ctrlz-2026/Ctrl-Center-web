@@ -6,8 +6,9 @@ import { invalidateMasters } from "@/lib/firebase/queries";
 import { FACE_MAX_BYTES, FaceTemplateError, parseFaceTemplate } from "@/lib/face-template";
 import { canManageAccounts } from "@/lib/types";
 
-/* 얼굴 특징 벡터 등록 · 삭제 (안전관리자 전용).
+/* 얼굴 등록 상태 · 특징 벡터 등록 · 삭제 (안전관리자 전용).
  *
+ *   GET    /api/admin/accounts/{사번}/face-template   등록 상태만 (벡터는 없음)
  *   PUT    /api/admin/accounts/{사번}/face-template   multipart, file=<벡터 파일>
  *   DELETE /api/admin/accounts/{사번}/face-template
  *
@@ -31,6 +32,36 @@ async function guard(request: Request) {
 
 function fail(status: number, error: string) {
   return NextResponse.json({ error }, { status });
+}
+
+/** 얼굴 등록 상태. 정보 관리 창이 **젯슨에서 등록이 끝나기를 기다리는 동안**
+ *  몇 초마다 묻는 곳이라 문서 하나만 읽습니다 — 프로필 전체를 다시 읽게 하면
+ *  기다리는 것만으로 읽기 한도를 씁니다. */
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ empNo: string }> },
+) {
+  const g = await guard(request);
+  if (g.error) return g.error;
+  const { empNo } = await params;
+
+  const snap = await adminDb().collection("employees").doc(empNo).get();
+  if (!snap.exists) return fail(404, "없는 계정이에요.");
+  const e = snap.data()!;
+  return NextResponse.json({
+    faceEnrolled: e.faceEnrolled === true,
+    faceEnrolledAt: e.faceEnrolledAt ?? null,
+    faceEnrolledBy: e.faceEnrolledBy ?? null,
+    faceTemplate: e.faceTemplate
+      ? {
+          dim: Number(e.faceTemplate.dim),
+          count: Number(e.faceTemplate.count),
+          model: e.faceTemplate.model ?? null,
+          fileName: e.faceTemplate.fileName ?? null,
+          uploadedAt: String(e.faceTemplate.uploadedAt),
+        }
+      : null,
+  });
 }
 
 export async function PUT(

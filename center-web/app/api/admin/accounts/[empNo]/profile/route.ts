@@ -70,6 +70,7 @@ export async function GET(
       : null,
     faceEnrolled: e.faceEnrolled === true,
     faceEnrolledAt: e.faceEnrolledAt ?? null,
+    faceEnrolledBy: e.faceEnrolledBy ?? null,
     faceTemplate: e.faceTemplate
       ? {
           dim: Number(e.faceTemplate.dim),

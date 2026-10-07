@@ -136,6 +136,34 @@ export interface FaceEnrollmentRequest {
   enrolled: boolean;
 }
 
+/** POST 의 응답. 웹 계정 관리 화면은 이 순간부터 그 사람을 "얼굴 등록됨"으로
+ *  보여줍니다 (열어둔 화면도 몇 초 안에 스스로 바뀝니다). */
+export interface FaceEnrollmentResponse {
+  ok: true;
+  emp_no: string;
+  name: string;
+  face_enrolled: boolean;
+  enrolled_at: string | null;
+}
+
+/**
+ * 등록 전에 사번이 누구인지 확인.
+ *
+ *   GET /api/gate/{gate_id}/face-enrollment?emp_no=202612345   (X-Gate-Key 필요)
+ *
+ * 사번을 잘못 넣으면 남의 이름으로 얼굴이 등록되므로, 찍기 전에 이름을 보여주고
+ * 확인받는 데 씁니다. 없는 사번이면 404.
+ */
+export interface FaceEnrollmentLookup {
+  emp_no: string;
+  name: string;
+  team: string;
+  /** false 면 비활성 계정 — 등록을 받지 않습니다 (POST 가 409). */
+  active: boolean;
+  face_enrolled: boolean;
+  enrolled_at: string | null;
+}
+
 /**
  * 얼굴 특징 벡터 내려받기.
  *

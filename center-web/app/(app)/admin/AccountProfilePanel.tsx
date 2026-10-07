@@ -20,9 +20,29 @@ interface Props {
   headers: () => Promise<HeadersInit>;
   onSaved: (message: string) => void;
   onClose: () => void;
+  /** 얼굴 등록 상태가 이 창 안에서 바뀌었을 때 (젯슨이 알렸거나, 파일을 올렸거나).
+   *  목록의 배지를 다시 불러오지 않고 맞추는 데 씁니다. */
+  onFaceChanged?: (empNo: string, enrolled: boolean) => void;
 }
 
-export function AccountProfilePanel({ empNo, headers, onSaved, onClose }: Props) {
+/** 젯슨에서 등록이 끝났는지 묻는 간격과, 묻기를 그만두는 시간.
+ *  창을 열어둔 채 잊어도 읽기 한도를 쓰지 않게 끝을 둡니다. */
+const FACE_POLL_MS = 4_000;
+const FACE_POLL_LIMIT_MS = 10 * 60_000;
+
+/** `gate:gate-a1` → "젯슨(gate-a1)". 그 밖은 관리자의 사번입니다. */
+function enrolledByLabel(by: string | null): string {
+  if (!by) return "";
+  return by.startsWith("gate:") ? `젯슨(${by.slice(5)})에서 등록` : "관리자가 등록";
+}
+
+export function AccountProfilePanel({
+  empNo,
+  headers,
+  onSaved,
+  onClose,
+  onFaceChanged,
+}: Props) {
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [options, setOptions] = useState<AccountProfileOptions | null>(null);
   const [busy, setBusy] = useState(false);
@@ -39,6 +59,18 @@ export function AccountProfilePanel({ empNo, headers, onSaved, onClose }: Props)
   const [faceBusy, setFaceBusy] = useState(false);
   const [faceError, setFaceError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  /** 서버가 알고 있는 등록 상태. 화면에서 손으로 바꾼 값(faceEnrolled)과 따로 둡니다. */
+  const [faceServer, setFaceServer] = useState<{
+    enrolled: boolean;
+    at: string | null;
+    by: string | null;
+  } | null>(null);
+  /** 관리자가 「파일 없이 등록됨으로 표시」를 직접 눌렀는가. 누른 적이 없으면
+   *  저장할 때 얼굴 값을 보내지 않습니다 — 창을 열어둔 사이 젯슨이 등록했는데
+   *  옛 값("미등록")을 같이 보내 도로 지우는 일을 막습니다. */
+  const [faceTouched, setFaceTouched] = useState(false);
+  const [pollStopped, setPollStopped] = useState(false);
+  const [pollRound, setPollRound] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -62,6 +94,11 @@ export function AccountProfilePanel({ empNo, headers, onSaved, onClose }: Props)
       );
       setCardUid(data.profile.card?.cardUid ?? "");
       setFaceEnrolled(data.profile.faceEnrolled);
+      setFaceServer({
+        enrolled: data.profile.faceEnrolled,
+        at: data.profile.faceEnrolledAt,
+        by: data.profile.faceEnrolledBy,
+      });
       setTemplate(data.profile.faceTemplate);
       setRestrict(data.profile.allowedWorkCodes !== null);
       setAllowed(data.profile.allowedWorkCodes ?? []);
@@ -70,6 +107,44 @@ export function AccountProfilePanel({ empNo, headers, onSaved, onClose }: Props)
       alive = false;
     };
   }, [empNo, headers]);
+
+  /* 젯슨의 얼굴 등록 프로그램에서 등록이 끝나기를 기다립니다. 끝나면 서버의
+     등록 여부가 바뀌므로, 미등록인 동안만 몇 초마다 그 값 하나를 묻습니다.
+     탭이 가려져 있으면 쉬고, 10분이 지나면 멈춥니다 (다시 확인 버튼). */
+  const waiting = faceServer !== null && !faceServer.enrolled && !pollStopped;
+  useEffect(() => {
+    if (!waiting) return;
+    let alive = true;
+    const startedAt = Date.now();
+    const timer = setInterval(async () => {
+      if (document.hidden) return;
+      if (Date.now() - startedAt > FACE_POLL_LIMIT_MS) {
+        setPollStopped(true);
+        return;
+      }
+      const { authorization } = (await headers()) as Record<string, string>;
+      const res = await fetch(`/api/admin/accounts/${empNo}/face-template`, {
+        headers: authorization ? { authorization } : undefined,
+      }).catch(() => null);
+      if (!alive || !res?.ok) return;
+      const st = (await res.json()) as {
+        faceEnrolled: boolean;
+        faceEnrolledAt: string | null;
+        faceEnrolledBy: string | null;
+        faceTemplate: AccountProfile["faceTemplate"];
+      };
+      if (!alive || !st.faceEnrolled) return;
+      setFaceServer({ enrolled: true, at: st.faceEnrolledAt, by: st.faceEnrolledBy });
+      setFaceEnrolled(true);
+      setFaceTouched(false);
+      setTemplate(st.faceTemplate);
+      onFaceChanged?.(empNo, true);
+    }, FACE_POLL_MS);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [waiting, pollRound, empNo, headers, onFaceChanged]);
 
   async function save() {
     setBusy(true);
@@ -80,7 +155,8 @@ export function AccountProfilePanel({ empNo, headers, onSaved, onClose }: Props)
       body: JSON.stringify({
         qualifications: quals,
         cardUid: cardUid.trim() || null,
-        faceEnrolled,
+        // 손으로 바꿨을 때만 보냅니다 (위 faceTouched 설명).
+        faceEnrolled: faceTouched ? faceEnrolled : undefined,
         allowedWorkCodes: restrict ? allowed : null,
       }),
     });
@@ -126,6 +202,9 @@ export function AccountProfilePanel({ empNo, headers, onSaved, onClose }: Props)
       uploadedAt: body.uploadedAt,
     });
     setFaceEnrolled(true);
+    setFaceTouched(false);
+    setFaceServer({ enrolled: true, at: body.uploadedAt, by: "admin" });
+    onFaceChanged?.(empNo, true);
   }
 
   async function removeTemplate() {
@@ -144,6 +223,10 @@ export function AccountProfilePanel({ empNo, headers, onSaved, onClose }: Props)
     }
     setTemplate(null);
     setFaceEnrolled(false);
+    setFaceTouched(false);
+    setFaceServer({ enrolled: false, at: null, by: null });
+    setPollStopped(false);
+    onFaceChanged?.(empNo, false);
   }
 
   if (!profile || !options) {
@@ -273,9 +356,9 @@ export function AccountProfilePanel({ empNo, headers, onSaved, onClose }: Props)
       <section className={styles.section}>
         <span className={styles.sectionTitle}>얼굴 등록</span>
         <p className={styles.lead}>
-          젯슨이 얼굴을 찍어 만든 <strong>특징 벡터 파일</strong>(JSON 또는
-          .npy)을 올리면 등록돼요. 사진은 올리지 않아요. 올린 벡터는 암호화해서
-          보관하고 게이트 기기만 내려받아요 — 이 화면에서도 다시 볼 수 없어요.
+          젯슨의 <strong>얼굴 등록 프로그램</strong>에서 사번{" "}
+          <strong>{profile.empNo}</strong> 으로 등록하면, 여기가 자동으로
+          &ldquo;등록됨&rdquo;으로 바뀌어요. 따로 누를 것은 없어요.
         </p>
 
         <div className={styles.faceRow}>
@@ -284,28 +367,63 @@ export function AccountProfilePanel({ empNo, headers, onSaved, onClose }: Props)
           </Badge>
           {template ? (
             <span className={styles.faceMeta}>
-              벡터 {template.count}개 · {template.dim}차원
+              파일로 등록 · 벡터 {template.count}개 · {template.dim}차원
               {template.model ? ` · ${template.model}` : ""} ·{" "}
-              {new Date(template.uploadedAt).toLocaleDateString("ko-KR")} 올림
+              {new Date(template.uploadedAt).toLocaleDateString("ko-KR")}
               {template.fileName ? ` (${template.fileName})` : ""}
+            </span>
+          ) : faceEnrolled && faceServer?.enrolled ? (
+            <span className={styles.faceMeta}>
+              {enrolledByLabel(faceServer.by)}
+              {faceServer.at
+                ? ` · ${new Date(faceServer.at).toLocaleString("ko-KR", {
+                    month: "long",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}`
+                : ""}
             </span>
           ) : faceEnrolled ? (
             <span className={styles.faceMeta}>
-              젯슨 앞에서 직접 등록됨 — 서버에는 벡터가 없어 그 기기에서만
-              인식돼요
+              아래 「저장」을 누르면 등록됨으로 표시돼요
             </span>
+          ) : waiting ? (
+            <span className={styles.faceWaiting} role="status">
+              <span className={styles.faceDot} aria-hidden="true" />
+              젯슨에서 등록하기를 기다리는 중이에요
+            </span>
+          ) : pollStopped ? (
+            <>
+              <span className={styles.faceMeta}>
+                한동안 소식이 없어 확인을 멈췄어요
+              </span>
+              <Button
+                size="small"
+                variant="outlined"
+                color="assistive"
+                onClick={() => {
+                  setPollStopped(false);
+                  setPollRound((n) => n + 1);
+                }}
+              >
+                다시 확인
+              </Button>
+            </>
           ) : null}
         </div>
 
         {faceError ? <p className={styles.error}>{faceError}</p> : null}
 
+        {/* 젯슨을 거치지 않는 길. 등록 프로그램이 내보낸 파일이 있을 때나, 등록은
+            했는데 알림이 오지 않았을 때 씁니다. */}
         <div className={styles.faceRow}>
           <input
             ref={fileInput}
             type="file"
             accept=".json,.npy,.txt,.csv,application/json,text/plain"
             className={styles.fileInput}
-            aria-label="얼굴 특징 벡터 파일"
+            aria-label="얼굴 등록 파일"
             disabled={faceBusy}
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -314,10 +432,12 @@ export function AccountProfilePanel({ empNo, headers, onSaved, onClose }: Props)
           />
           <Button
             size="small"
+            variant="outlined"
+            color="assistive"
             disabled={faceBusy}
             onClick={() => fileInput.current?.click()}
           >
-            {faceBusy ? "처리 중" : template ? "벡터 파일 바꾸기" : "벡터 파일 올리기"}
+            {faceBusy ? "처리 중" : template ? "파일 바꾸기" : "파일로 등록하기"}
           </Button>
           {template ? (
             <Button
@@ -327,21 +447,26 @@ export function AccountProfilePanel({ empNo, headers, onSaved, onClose }: Props)
               disabled={faceBusy}
               onClick={removeTemplate}
             >
-              벡터 삭제
+              얼굴 등록 삭제
             </Button>
           ) : (
-            /* 벡터 없이 표시만 맞추는 용도. 젯슨 앞에서 등록했는데 기기가
-               알리지 못했을 때 씁니다. 아래 「저장」을 눌러야 반영됩니다. */
+            /* 표시만 맞추는 용도. 아래 「저장」을 눌러야 반영됩니다. */
             <Button
               size="small"
               variant="outlined"
               color="assistive"
               disabled={faceBusy}
-              onClick={() => setFaceEnrolled(!faceEnrolled)}
+              onClick={() => {
+                setFaceEnrolled(!faceEnrolled);
+                setFaceTouched(true);
+              }}
             >
-              {faceEnrolled ? "등록 해제" : "벡터 없이 등록됨으로 표시"}
+              {faceEnrolled ? "등록 해제" : "파일 없이 등록됨으로 표시"}
             </Button>
           )}
+          <span className={styles.faceMeta}>
+            젯슨을 거치지 않을 때만 써요. 사진은 받지 않아요 (JSON · .npy)
+          </span>
         </div>
       </section>
 

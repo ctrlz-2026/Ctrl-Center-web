@@ -175,11 +175,11 @@ center-web/
       signup/                가입 신청 — 유일하게 인증 없이 열린 경로
       admin/accounts/        계정 목록 · 역할/비번/활성
         [empNo]/profile/     자격 · 사원증 · 얼굴등록 · 작업배정
-        [empNo]/face-template/  얼굴 특징 벡터 파일 올리기 · 삭제
+        [empNo]/face-template/  얼굴 등록 상태 · 벡터 파일 올리기 · 삭제
       admin/signups/[id]/    가입 승인·거절
       stream/requests/       SSE 실시간
       gate/events/           젯슨 수신구 (기기 키)
-      gate/[gateId]/         번들 · 선택된 작업 · 얼굴 등록 알림 · 얼굴 벡터 내려받기 (기기 키)
+      gate/[gateId]/         번들 · 선택된 작업 · 얼굴 등록(사번 확인 · 완료 알림) · 얼굴 벡터 내려받기 (기기 키)
       kiosk/[gateId]/        키오스크 화면용 (작업 선택 · 상태 · 종료 · 시연)
   components/                Button · Badge · Card · DataTable · Field · Logo · TopNav …
   lib/

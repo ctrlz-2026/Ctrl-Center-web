@@ -82,7 +82,6 @@ export default function LoginPage() {
           <div className={styles.fields}>
             <TextField
               label={isAdmin ? "관리자 사번" : "사번"}
-              placeholder="202533690"
               autoComplete="username"
               value={employeeId}
               onChange={(e) => {
