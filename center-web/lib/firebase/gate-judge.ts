@@ -38,8 +38,11 @@ export async function applyEvents(
   if (!work) throw new Error("work code missing");
 
   const ref = db.collection("gateSessions").doc(`${body.gate_id}__${body.approval_request_id}`);
-  const snap = await ref.get();
+  return db.runTransaction(async (transaction) => {
+  const contextRef = db.collection("kioskContexts").doc(body.gate_id);
+  const [snap, contextSnap] = await Promise.all([transaction.get(ref), transaction.get(contextRef)]);
   const old = snap.exists ? snap.data()! : {};
+  const processed = new Set(strings(old.processedEventKeys));
   const tagged = new Set(strings(old.taggedEmpNos));
   const face = new Set(strings(old.facePassedEmpNos));
   const verified = new Set(strings(old.verifiedEmpNos));
@@ -81,6 +84,8 @@ export async function applyEvents(
   };
 
   for (const event of events) {
+    if (processed.has(event.idempotency_key)) continue;
+    processed.add(event.idempotency_key);
     const p = event.payload as unknown as Record<string, unknown>;
     if (event.kind === "card_tag") {
       const uid = String(p.card_uid ?? "");
@@ -171,7 +176,8 @@ export async function applyEvents(
   unlock = state !== "blocked" && verified.size >= required && entered.size < required;
   const headcount = { required, tagged: tagged.size, verified: verified.size, entered: entered.size };
   const now = new Date().toISOString();
-  await ref.set({
+  transaction.set(ref, {
+    processedEventKeys: [...processed].slice(-1024),
     gateId: body.gate_id, siteId: approval.siteId, workCode: workCodeId,
     approvalRequestId: body.approval_request_id, state, members: [...members],
     /* startedAt 은 관제 화면이 "경과"로 읽는 값이라 **작업이 시작된 때**여야
@@ -195,9 +201,8 @@ export async function applyEvents(
     ...(approval.demo === true ? { demo: true } : {}),
   }, { merge: true });
   if (shouldClearContext) {
-    const ctx = db.collection("kioskContexts").doc(body.gate_id);
-    const ctxSnap = await ctx.get();
-    if (ctxSnap.data()?.approvalRequestId === body.approval_request_id) await ctx.delete();
+    if (contextSnap.data()?.approvalRequestId === body.approval_request_id) transaction.delete(contextRef);
   }
   return { session_id: ref.id, state, headcount, last_verification: lastVerification, last_exit: lastExit, unlock, message };
+  });
 }
