@@ -546,6 +546,20 @@
   transform: scaleX(-1);
 }
 
+/* 젯슨이 내보낸 화면은 뒤집지 않습니다 — 인식 결과가 글자로 그려져 있습니다. */
+.cameraStream {
+  transform: none;
+}
+
+/* 젯슨 화면이 오는지 보는 동안. 자리를 차지하지 않게 숨깁니다. */
+.cameraProbe {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .cameraNote {
   max-width: 460px;
   font-size: 14px;
