@@ -93,6 +93,12 @@ export const workCodes = [
     requiredPpe: ["helmet", "shoes", "gloves", "lanyard"],
     requiredQualifications: ["crane"],
     estimatedMinutes: 70, active: true },
+  // 팀장 표에 없는 작업입니다 (2026-10-07 추가). 보호구가 **안전모 하나뿐**인 작업이
+  // 없어서, 보호구 검사를 가장 단순한 조건으로 돌려볼 방법이 없었습니다.
+  // 표에 올라가면 위 대응표에 같이 적어주세요.
+  { code: "K", name: "현장 순회 점검", requiredHeadcount: 2,
+    requiredPpe: ["helmet"], requiredQualifications: [],
+    estimatedMinutes: 20, active: true },
 ];
 
 /* ─── 실제 팀원 사번 ─────────────────────────────────────────────────────────
