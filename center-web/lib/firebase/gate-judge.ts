@@ -3,6 +3,7 @@ import "server-only";
 import { adminDb } from "./admin";
 import { loadMasters } from "./queries";
 import { qualificationStatus } from "./user";
+import { entryAllowed } from "../entry-policy";
 import type { GateEvent, GateEventsRequest, GateStateResponse } from "@/lib/gate-contract";
 
 /* 문 앞 판정.
@@ -104,9 +105,12 @@ export async function applyEvents(
 
     const empNo = typeof p.emp_no === "string" ? p.emp_no : "";
     if (!empNo || !tagged.has(empNo)) continue;
+    // Late observations must not undo a completed verification or reopen work.
+    if ((event.kind === "face_match" || event.kind === "ppe_check") &&
+        (verified.has(empNo) || state === "working")) continue;
     if (event.kind === "face_match") {
       if (p.matched === true && p.live !== false) { face.add(empNo); state = "verifying"; message = "얼굴 확인 완료 · 보호구를 확인하고 있습니다."; signal = "face_ok"; }
-      else { state = "face"; message = "얼굴 확인에 실패했습니다. 다시 시도해 주세요."; lastVerification = { emp_no: empNo, passed: false, failed_items: [], attempt: 0, block_reason: "face" }; signal = "face_fail"; }
+      else { face.delete(empNo); state = "face"; message = "얼굴 확인에 실패했습니다. 다시 시도해 주세요."; lastVerification = { emp_no: empNo, passed: false, failed_items: [], attempt: 0, block_reason: "face" }; signal = "face_fail"; }
     } else if (event.kind === "ppe_check") {
       const items = Array.isArray(p.items) ? p.items : [];
       const worn = new Set(items.filter((x) => typeof x === "object" && x !== null && (x as { worn?: boolean }).worn === true).map((x) => String((x as { code?: string }).code)));
@@ -126,7 +130,7 @@ export async function applyEvents(
         signal = unlock ? "unlock" : "ppe_ok";
         if (unlock) shouldClearContext = true;
       }
-    } else if (event.kind === "entry" && verified.has(empNo)) {
+    } else if (event.kind === "entry" && state !== "blocked" && entryAllowed(verified.has(empNo), verified.size, Number(work.requiredHeadcount ?? 1))) {
       /* 작업 시작 기준은 **실제로 들어간 사람 수**입니다 (「출입 및 인원관리
        * 로직」 §7). 검증을 통과한 수(verified)로 재면, 2명 작업에서 둘 다
        * 통과하고 한 명만 들어가도 "작업 중"이 됩니다 — 혼자 들어간 사람이
@@ -144,6 +148,8 @@ export async function applyEvents(
       // 문이 열려 첫 사람이 들어간 때가 작업 시작입니다. 사원증을 처음 댄
       // 시각으로 잡으면 검증에 걸린 시간까지 작업 시간에 섞입니다.
       if (!workStartedAt) workStartedAt = event.occurred_at;
+    } else if (event.kind === "entry") {
+      message = "필요한 인원의 검증이 아직 끝나지 않아 입장할 수 없습니다.";
     } else if (event.kind === "exit") {
       entered.delete(empNo); lastExit = { emp_no: empNo }; message = "퇴장 처리되었습니다.";
       signal = "exit";

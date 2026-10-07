@@ -8,6 +8,7 @@ import { preloadVoice, promptFor, say, voiceFor } from "@/lib/kiosk-voice";
 import type { KioskSignal, KioskStatus } from "@/lib/kiosk-types";
 import { nextPersonNotice } from "@/lib/kiosk-next-person";
 import { kioskGuidance } from "@/lib/kiosk-guidance";
+import { kioskPollInterval } from "@/lib/kiosk-poll-policy";
 import { KioskCamera } from "./KioskCamera";
 import styles from "../../../page.module.css";
 
@@ -24,9 +25,10 @@ import styles from "../../../page.module.css";
  * 이 화면을 밤새 열어둔 것만으로 Firestore 무료 일일 한도를 다 써서 배포
  * 사이트까지 멈췄습니다. 그래서
  *   - 화면이 안 보이면(탭 숨김·화면 꺼짐) 묻지 않습니다
- *   - 대기 중엔 4초, 작업 중엔 15초 — 작업 중에는 상태가 거의 안 바뀝니다
- *   - 작업이 끝나면 멈춥니다
- *   - 20분 동안 아무것도 안 바뀌면 멈추고 "눌러서 다시 확인"을 띄웁니다 */
+ *   - 사원증 대기·작업 중에는 자동 조회하지 않습니다
+ *   - 얼굴·보호구·입장 안내 중에만 5초 간격으로 확인합니다
+ *   - 1분 무변화·연결 오류·작업 종료면 멈춥니다
+ *   - 필요하면 사용자가 "현재 상태 한 번 확인"을 누릅니다 */
 
 interface Task {
   requestId: string;
@@ -36,13 +38,8 @@ interface Task {
   requiredPpe: string[];
 }
 
-const POLL_READY_MS = 4_000;
-const POLL_WORKING_MS = 15_000;
-/** 검증이 한창일 때(방금 뭔가 바뀌었을 때)만 잠깐 빨리 묻습니다. 사원증을 찍고
- *  소리가 4초 뒤에 나면 고장난 줄 압니다. 30초 조용하면 다시 느려집니다. */
-const POLL_ACTIVE_MS = 1_500;
-const ACTIVE_WINDOW_MS = 30_000;
-const IDLE_STOP_MS = 20 * 60_000;
+/** 자동 조회는 실제 검증 단계에만 제한하고, 무변화 시 중단합니다. */
+const IDLE_STOP_MS = 60_000;
 /** 리더가 치는 글자 사이의 간격. 리더는 한 글자에 0.01~0.03초, 사람 손은 0.1초
  *  이상이라 이 값으로 둘을 가릅니다 — 사람이 키보드로 친 것을 사원증으로 보내면
  *  "등록되지 않은 사원증"으로 작업이 막힙니다. */
@@ -160,14 +157,8 @@ export function KioskLive({
 
   const phaseNow = status.phase;
   useEffect(() => {
-    if (paused || phaseNow === "closed") return;
-    const active = Date.now() - changedAt < ACTIVE_WINDOW_MS;
-    const every =
-      phaseNow === "working"
-        ? POLL_WORKING_MS
-        : active
-          ? POLL_ACTIVE_MS
-          : POLL_READY_MS;
+    const every = kioskPollInterval(status, paused, Date.now() - changedAt);
+    if (every === null) return;
     const t = setInterval(() => {
       if (document.visibilityState !== "visible") return;
       if (Date.now() - changedAt > IDLE_STOP_MS) {
@@ -176,16 +167,10 @@ export function KioskLive({
       }
       void refresh();
     }, every);
-    /* 빠른 주기는 조용해지면 풀려야 합니다. 주기를 고르는 건 이 effect 가 다시
-       돌 때뿐이라, 30초 뒤에 한 번 깨워 느린 주기로 갈아탑니다. */
-    const calm = active
-      ? setTimeout(() => setChangedAt((c) => c - 1), ACTIVE_WINDOW_MS)
-      : null;
     return () => {
       clearInterval(t);
-      if (calm) clearTimeout(calm);
     };
-  }, [refresh, phaseNow, paused, changedAt]);
+  }, [refresh, phaseNow, status.step, paused, changedAt, status]);
 
   async function enableSound() {
     const ok = await unlockSound();
@@ -245,7 +230,8 @@ export function KioskLive({
         setError("문이 열려 있어요. 들어가세요.");
         return;
       }
-      if ((now.step ?? "tagging") !== "tagging") {
+      const retrySamePerson = now.signal?.kind === "face_fail" || now.signal?.kind === "ppe_fail";
+      if ((now.step ?? "tagging") !== "tagging" && !retrySamePerson) {
         setError("앞 사람 확인이 끝난 뒤에 사원증을 대주세요.");
         return;
       }
@@ -505,6 +491,11 @@ export function KioskLive({
       {paused ? (
         <button type="button" className={styles.secondary} onClick={resume}>
           {connectionError ? "연결 상태 확인" : "조회 절약을 위해 확인을 멈췄어요 · 현재 상태 확인"}
+        </button>
+      ) : null}
+      {!paused && phase !== "closed" ? (
+        <button type="button" className={styles.secondary} onClick={resume} disabled={busy || tagReading}>
+          현재 상태 한 번 확인
         </button>
       ) : null}
 
