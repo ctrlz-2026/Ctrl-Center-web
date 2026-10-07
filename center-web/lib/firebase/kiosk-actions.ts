@@ -201,6 +201,54 @@ export async function tagCard(gateId: string, requestId: string, rawUid: string)
   return NextResponse.json({ ok: true, state: decision.state, message: decision.message });
 }
 
+/** 문이 열린 뒤 한 사람이 들어감.
+ *
+ *  실물 문이 없습니다. 문 역할은 키오스크 화면의 3D 장면이 하고, 사람이 문을
+ *  지났는지 볼 센서도 없습니다. 그래서 **문(화면)이** 한 사람씩 들어갔다고
+ *  알립니다 — 검증을 마치고 아직 안 들어간 사람을 한 명 들여보냅니다.
+ *
+ *  아무나 부를 수 있는 경로지만 할 수 있는 일은 좁습니다. 서버가 이미 "문을
+ *  열어도 된다"고 판정한 작업에서, 검증을 통과한 사람만 들어갑니다. 검증을
+ *  건너뛰거나 닫힌 문을 여는 데는 쓸 수 없습니다. 판정은 젯슨의 entry 이벤트와
+ *  같은 함수가 합니다 (전원이 들어가야 작업 중). */
+export async function enterNext(gateId: string, requestId: string) {
+  const loaded = await loadGateAndRequest(gateId, requestId);
+  if (loaded instanceof NextResponse) return loaded;
+
+  const db = adminDb();
+  const snap = await db.collection("gateSessions").doc(`${gateId}__${requestId}`).get();
+  const s = snap.data();
+  if (!s || s.state !== "unlocking" || s.unlock !== true) {
+    return fail(409, "문이 열려 있지 않아요.");
+  }
+  const entered = new Set<string>((s.enteredEmpNos ?? []).map(String));
+  const next = ((s.verifiedEmpNos ?? []) as unknown[]).map(String).find((e) => !entered.has(e));
+  if (!next) return NextResponse.json({ ok: true, done: true });
+
+  const now = new Date().toISOString();
+  const event = {
+    idempotency_key: `kiosk-${gateId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    kind: "entry",
+    occurred_at: now,
+    payload: { emp_no: next },
+  } as GateEvent;
+  const body: GateEventsRequest = { gate_id: gateId, approval_request_id: requestId, events: [event] };
+  const decision = await applyEvents(body, loaded.r, [event]);
+  await db.collection("gateEvents").doc(event.idempotency_key).set({
+    idempotencyKey: event.idempotency_key,
+    sessionId: decision.session_id,
+    gateId,
+    approvalRequestId: requestId,
+    kind: event.kind,
+    payload: event.payload,
+    occurredAt: now,
+    receivedAt: now,
+    // 센서가 본 것이 아니라 화면의 문이 알린 것입니다.
+    source: "kiosk",
+  });
+  return NextResponse.json({ ok: true, state: decision.state, headcount: decision.headcount });
+}
+
 // ── 3. 작업 종료 ──────────────────────────────────────────────────────────
 
 export async function endWork(gateId: string, sessionId: string) {

@@ -58,6 +58,10 @@ function charOfKey(code: string): string | null {
 
 /** 알림음이 끝난 뒤에 말을 시작합니다. 가장 긴 알림음(문 열림 · 차단)이 0.6초쯤입니다. */
 const VOICE_AFTER_BEEP_MS = 650;
+/** 문이 열린 뒤 첫 사람이 들어가기까지, 그리고 다음 사람까지의 간격.
+ *  "문이 열렸습니다. 들어가세요"를 다 말하고, 3D 에서 한 사람이 문을 지나갈 시간입니다. */
+const ENTER_FIRST_MS = 5_000;
+const ENTER_EVERY_MS = 4_000;
 
 /** 문 앞 단계별 안내. 서버 문구(message)가 있으면 그걸 본문에 씁니다. */
 const STEP_TITLE: Record<NonNullable<KioskStatus["step"]>, string> = {
@@ -175,6 +179,55 @@ export function KioskLive({
       if (calm) clearTimeout(calm);
     };
   }, [refresh, phaseNow, paused, changedAt]);
+
+  /* 화면을 한 번이라도 건드리면(터치 · 클릭 · 사원증 리더의 입력) 소리 잠금을 풉니다.
+     브라우저는 사람이 건드리기 전에는 소리를 막는데, 이 화면을 주소로 바로 열거나
+     새 탭으로 열면 「입장 시작」을 누른 적이 없어 잠긴 채로 시작합니다. 그러면
+     「소리 켜기」를 따로 눌러야 하는데, 문 앞에서 그 버튼을 찾아 누르는 사람은 없습니다. */
+  useEffect(() => {
+    if (soundOn) return;
+    const wake = () => {
+      void unlockSound().then((ok) => {
+        if (!ok) return;
+        setSoundOn(true);
+        void preloadVoice();
+      });
+    };
+    window.addEventListener("pointerdown", wake, true);
+    window.addEventListener("keydown", wake, true);
+    return () => {
+      window.removeEventListener("pointerdown", wake, true);
+      window.removeEventListener("keydown", wake, true);
+    };
+  }, [soundOn]);
+
+  /* 문이 열리면 **들어가는 것은 화면이 알립니다.** 실물 문이 없고 사람이 지났는지
+     볼 센서도 없어서, 문 역할을 하는 이 화면이 검증을 마친 사람을 한 명씩
+     들여보냅니다 (아래 3D 장면에서 한 명씩 걸어 들어갑니다). 전원이 들어가면
+     서버가 작업 중으로 바꿉니다. 젯슨이 입장을 따로 알려도 겹치지 않습니다. */
+  const doorOpen = status.phase === "ready" && status.step === "unlocking";
+  useEffect(() => {
+    if (!doorOpen) return;
+    let alive = true;
+    let every: ReturnType<typeof setInterval> | null = null;
+    const enter = async () => {
+      await fetch(`/api/kiosk/${gateId}/enter`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ requestId: task.requestId }),
+      }).catch(() => null);
+      if (alive) await refresh();
+    };
+    const first = setTimeout(() => {
+      void enter();
+      every = setInterval(() => void enter(), ENTER_EVERY_MS);
+    }, ENTER_FIRST_MS);
+    return () => {
+      alive = false;
+      clearTimeout(first);
+      if (every) clearInterval(every);
+    };
+  }, [doorOpen, gateId, task.requestId, refresh]);
 
   async function enableSound() {
     const ok = await unlockSound();
