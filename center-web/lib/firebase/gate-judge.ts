@@ -98,6 +98,13 @@ export async function applyEvents(
         return !expires || qualificationStatus(expires).status === "expired";
       });
       if (missing) { block(empNo, "qualification", `${masters.qualNames.get(missing) ?? missing} 자격이 없거나 만료됐습니다.`); continue; }
+      if (verified.has(empNo)) {
+        lastVerification = { emp_no: empNo, passed: true, failed_items: [], attempt: Number(old.lastVerification?.attempt ?? 1) };
+        message = entered.has(empNo)
+          ? "이미 입장이 기록된 작업자입니다. 퇴장은 실제 통과 확인 신호로 처리합니다."
+          : "이미 얼굴·보호구 확인을 마쳤습니다. 다른 작업자의 확인 또는 입장 안내를 기다려 주세요.";
+        continue;
+      }
       tagged.add(empNo); members.add(empNo); state = "face"; message = "얼굴을 확인하고 있습니다.";
       signal = "card_ok";
       continue;
