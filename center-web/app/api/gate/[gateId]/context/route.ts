@@ -45,7 +45,7 @@ export async function GET(
     loadMasters(),
     adminDb().collection("gateSessions").doc(`${gateId}__${String(c.approvalRequestId)}`).get(),
   ]);
-  // 검증이 어디까지 왔는지. 젯슨이 다시 켜졌을 때 여기서 차례를 다시 압니다.
+  // 검증이 어디까지 왔는지. 화면이 사원증을 읽은 경우 젯슨은 여기서 차례를 압니다.
   const s = sessionSnap.data();
   const verified = new Set<string>((s?.verifiedEmpNos ?? []).map(String));
   const facePassed = new Set<string>((s?.facePassedEmpNos ?? []).map(String));

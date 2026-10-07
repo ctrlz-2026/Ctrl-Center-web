@@ -41,6 +41,21 @@ const POLL_WORKING_MS = 15_000;
 const POLL_ACTIVE_MS = 1_500;
 const ACTIVE_WINDOW_MS = 30_000;
 const IDLE_STOP_MS = 20 * 60_000;
+/** 리더가 치는 글자 사이의 간격. 리더는 한 글자에 0.01~0.03초, 사람 손은 0.1초
+ *  이상이라 이 값으로 둘을 가릅니다 — 사람이 키보드로 친 것을 사원증으로 보내면
+ *  "등록되지 않은 사원증"으로 작업이 막힙니다. */
+const READER_MS_PER_CHAR = 60;
+
+/** 눌린 **자리**로 글자를 정합니다. 젯슨의 입력기가 한글 상태면 `A` 가 `ㅁ` 으로
+ *  들어와 번호가 깨지는데, 자리(code)는 입력기와 상관없이 같습니다. */
+function charOfKey(code: string): string | null {
+  const digit = /^(?:Digit|Numpad)(\d)$/.exec(code);
+  if (digit) return digit[1];
+  const letter = /^Key([A-Z])$/.exec(code);
+  if (letter) return letter[1];
+  return code === "Minus" || code === "NumpadSubtract" ? "-" : null;
+}
+
 /** 알림음이 끝난 뒤에 말을 시작합니다. 가장 긴 알림음(문 열림 · 차단)이 0.6초쯤입니다. */
 const VOICE_AFTER_BEEP_MS = 650;
 
@@ -194,6 +209,73 @@ export function KioskLive({
     setBusy(false);
     setConfirmEnd(false);
   }
+
+  /* ── 사원증 리더 ────────────────────────────────────────────────────────
+     현장의 USB 리더는 **키보드처럼** 동작합니다. 카드를 대면 번호를 빠르게 치고
+     Enter 를 누릅니다. 입력 칸을 따로 두지 않고 화면 어디서든 받습니다 — 장갑 낀
+     손으로 칸을 먼저 눌러야 한다면 아무도 누르지 않습니다. */
+  const tagBusy = useRef(false);
+  const onCard = useCallback(
+    async (uid: string) => {
+      const now = prevRef.current;
+      if (now.phase !== "ready" || tagBusy.current) return;
+      if (now.step === "unlocking") {
+        setError("문이 열려 있어요. 들어가세요.");
+        return;
+      }
+      if ((now.step ?? "tagging") !== "tagging") {
+        setError("앞 사람 확인이 끝난 뒤에 사원증을 대주세요.");
+        return;
+      }
+      tagBusy.current = true;
+      setError(null);
+      const res = await fetch(`/api/kiosk/${gateId}/tag`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ requestId: task.requestId, cardUid: uid }),
+      }).catch(() => null);
+      if (!res?.ok) {
+        const j = (await res?.json().catch(() => null)) as { error?: string } | null;
+        setError(j?.error ?? "사원증을 확인하지 못했어요. 다시 대주세요.");
+        // 화면을 안 보고 있어도 "안 읽혔다"는 것을 알 수 있게 낮은 음을 냅니다.
+        playSignal("face_fail");
+      }
+      // 결과(얼굴 확인으로 넘어감 · 막힘)는 상태를 다시 읽어 화면과 소리로 알립니다.
+      await refresh();
+      tagBusy.current = false;
+    },
+    [gateId, task.requestId, refresh],
+  );
+
+  useEffect(() => {
+    const typed = { text: "", first: 0, last: 0 };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      const now = performance.now();
+      if (e.key === "Enter" || e.code === "NumpadEnter") {
+        const uid = typed.text;
+        typed.text = "";
+        const fromReader =
+          uid.length >= 4 && now - typed.first <= uid.length * READER_MS_PER_CHAR + 100;
+        if (!fromReader) return;
+        // 버튼에 초점이 가 있으면 리더의 Enter 가 그 버튼을 누릅니다 (「작업 종료」 등).
+        e.preventDefault();
+        e.stopPropagation();
+        void onCard(uid);
+        return;
+      }
+      const ch = charOfKey(e.code);
+      if (!ch) return; // Shift 같은 보조 키는 흐름을 끊지 않습니다
+      if (now - typed.last > 300) {
+        typed.text = "";
+        typed.first = now;
+      }
+      typed.text = (typed.text + ch).slice(-32);
+      typed.last = now;
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [onCard]);
 
   /* 다시 시도 = 이 게이트에서 이 작업을 다시 "검증할 작업"으로 올립니다.
      서버는 선택 시각보다 앞선 차단을 지난 시도로 보고 대기 화면을 돌려줍니다. */
