@@ -30,11 +30,13 @@ export default async function KioskGatePickerPage() {
             className={styles.card}
           >
             <span className={styles.code}>
-              {/* 게이트 식별자의 뒷자리만 크게 (gate-b2 → B2) */}
-              {g.gateId.replace(/^gate-/, "").toUpperCase()}
+              {/* 층 이름을 크게. 전에는 게이트 식별자의 뒷자리(B2)를 띄웠는데,
+                  작업장을 층으로 부르게 되면서 "2층"에 "B2"가 붙어 있으면 지하
+                  2층으로 읽힙니다. 식별자는 아래에 작게 남깁니다. */}
+              {g.siteName}
             </span>
             <span className={styles.cardBody}>
-              <span className={styles.cardTitle}>{g.siteName}</span>
+              <span className={styles.cardTitle}>{g.siteName} 게이트</span>
               <span className={styles.cardMeta}>{g.gateId}</span>
             </span>
             <span className={styles.chev} aria-hidden="true">

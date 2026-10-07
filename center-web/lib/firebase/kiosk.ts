@@ -82,6 +82,8 @@ export async function loadKioskGates(): Promise<KioskGate[]> {
     loadMasters(),
     adminDb().collection("gates").get(),
   ]);
+  // 작업장 목록과 같은 순서로 (1층 · 2층 · 3층 · 지하 · 옥상).
+  const order = [...masters.sites.keys()];
   return gateSnap.docs
     .map((d) => {
       const g = d.data();
@@ -92,7 +94,7 @@ export async function loadKioskGates(): Promise<KioskGate[]> {
         siteName: masters.sites.get(siteId) ?? siteId,
       };
     })
-    .sort((a, b) => a.siteName.localeCompare(b.siteName, "ko"));
+    .sort((a, b) => order.indexOf(a.siteId) - order.indexOf(b.siteId));
 }
 
 export async function loadKioskGate(gateId: string): Promise<KioskGate | null> {

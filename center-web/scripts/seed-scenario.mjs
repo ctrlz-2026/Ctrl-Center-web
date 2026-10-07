@@ -14,8 +14,8 @@
  *   - 시각은 실행 시점 기준 상대값 (시연 전에 한 번 돌리면 그럴듯한 시간)
  *
  * 그 안에서 저절로 생기는 "확인할 일"은 두 건뿐입니다.
- *   - A동: 전기 자격이 만료된 서동현 님이 문 앞에서 막힘 (서버의 실제 자격 판정)
- *   - D동: 천장 조명기구 교체가 예상 30분을 조금 넘김
+ *   - 1층: 전기 자격이 만료된 서동현 님이 문 앞에서 막힘 (서버의 실제 자격 판정)
+ *   - 옥상: 천장 조명기구 교체가 예상 30분을 조금 넘김
  *
  *   오전 (끝남)   A3 공조기 벨트 · F0 펌프 점검 · B2 사다리 점검(김병오·정천호)
  *   지금 (작업중) A1 컨베이어 · D5 조명 교체(초과) · C0 밀폐공간 정비(3명)
@@ -55,7 +55,7 @@ const LEADER = TEAM.kim; // 결재권자
 const REQUESTS = [
   // 오전에 끝난 작업들의 요청
   ["req-demo-done-1", "site-a3", "H", "2017-0264", 240, "approved", 300, 270, "공조기 벨트 마모 — 정기 교체", null],
-  ["req-demo-done-2", "site-f0", "F", "2013-0055", 210, "approved", 280, 250, null, null],
+  ["req-demo-done-2", "site-c0", "F", "2013-0055", 210, "approved", 280, 250, null, null],
   ["req-demo-done-3", "site-b2", "A", TEAM.jeong, 175, "approved", 260, 230,
     "정기 점검 주기 도래로 사다리 상단 고정부 확인", "상단 고정부 볼트 상태 꼭 봐주세요"],
   // 지금 작업 중인 것들의 요청
@@ -66,7 +66,7 @@ const REQUESTS = [
   // 입장 대기 (승인됨, 아직 안 들어감)
   ["req-demo-wait-1", "site-b2", "C", "2022-0703", -25, "approved", 70, 35,
     "3번 밸브 누수 확인 후 교체", "상류 차단밸브 잠금 확인 후 작업 시작하세요"],
-  ["req-demo-wait-2", "site-f0", "F", TEAM.jeong, -80, "approved", 50, 20, "펌프 2호기 진동 재확인", null],
+  ["req-demo-wait-2", "site-c0", "F", TEAM.jeong, -80, "approved", 50, 20, "펌프 2호기 진동 재확인", null],
   // 서동현 님 — 승인은 났지만 전기 자격이 만료돼 문 앞에서 막혔습니다
   ["req-demo-wait-3", "site-a1", "B", "2016-0208", 55, "approved", 130, 100, "라인2 조명 2개 교체", null],
   // 결재 대기
@@ -100,7 +100,7 @@ const closedToday = [
   { id: "demo-done-1", req: "req-demo-done-1", siteId: "site-a3", workCode: "H",
     started: 235, minutes: 33, members: ["2017-0264", "2018-0511"],
     passedFirstTry: true, verification: "전 항목 1차 통과" },
-  { id: "demo-done-2", req: "req-demo-done-2", siteId: "site-f0", workCode: "F",
+  { id: "demo-done-2", req: "req-demo-done-2", siteId: "site-c0", workCode: "F",
     started: 205, minutes: 48, members: ["2013-0055", "2021-0619"],
     passedFirstTry: true, verification: "전 항목 1차 통과" },
   { id: "demo-done-3", req: "req-demo-done-3", siteId: "site-b2", workCode: "A",

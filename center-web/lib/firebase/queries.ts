@@ -60,7 +60,18 @@ async function readMasters(): Promise<Masters> {
   return {
     workCodes: new Map(wc.docs.map((d) => [d.id, d.data()])),
     employees: new Map(emp.docs.map((d) => [d.id, d.data()])),
-    sites: new Map(site.docs.map((d) => [d.id, String(d.data().name)])),
+    /* 작업장은 order 순으로 담습니다. Map 은 넣은 순서를 지키므로, 이 순서가
+       신청 화면 · 관제 보드 · 키오스크 목록에 그대로 나옵니다. 이름순이면
+       "1층 · 2층 · 3층 · 옥상 · 지하", ID 순이면 "1층 · 3층 · 2층"이 됩니다. */
+    sites: new Map(
+      [...site.docs]
+        .sort(
+          (a, b) =>
+            Number(a.data().order ?? 99) - Number(b.data().order ?? 99) ||
+            a.id.localeCompare(b.id),
+        )
+        .map((d) => [d.id, String(d.data().name)]),
+    ),
     ppeNames: new Map(ppe.docs.map((d) => [d.id, String(d.data().name)])),
     ppeYolo: new Map(
       ppe.docs.map((d) => [d.id, (d.data().yoloClass as string | null) ?? null]),
@@ -71,11 +82,9 @@ async function readMasters(): Promise<Masters> {
 
 export interface SiteOption { id: string; name: string }
 
-/** 작업장 선택지. */
+/** 작업장 선택지. 순서는 Masters 가 정해둔 그대로입니다 (order 순). */
 export function toSites(m: Masters): SiteOption[] {
-  return [...m.sites.entries()]
-    .map(([id, name]) => ({ id, name }))
-    .sort((a, b) => a.name.localeCompare(b.name, "ko"));
+  return [...m.sites.entries()].map(([id, name]) => ({ id, name }));
 }
 
 /** 작업코드를 화면이 쓰는 모양으로. 보호구 코드는 사람이 읽는 이름으로 바꿉니다.

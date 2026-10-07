@@ -52,7 +52,7 @@ employeeCards/{카드UID}   → 사번 · issuedAt · revokedAt · pending
 qualifications/{코드}     자격 종류 마스터
 ppeItems/{코드}           보호구. yoloClass 가 AI 모델 클래스와 1:1
 workCodes/{코드}          필수인원 · 필수보호구[] · 필수자격[] · 예상시간
-sites/{id}                작업장
+sites/{id}                작업장 — 한 건물의 층 5곳 (1층·2층·3층·지하·옥상). order 로 정렬
 gates/{id}                게이트 ↔ 작업장 매핑
 approvalRequests/{auto}   요청자·작업코드·작업장·예정시각·상태·승인자·반려사유
 gateSessions/{id}         게이트 세션. 끝난 세션이 곧 "작업 이력"

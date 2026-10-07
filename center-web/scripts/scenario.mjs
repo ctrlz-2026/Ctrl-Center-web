@@ -112,7 +112,7 @@ let newId = null;
 console.log("\n[4] 키오스크 — 승인된 것만 노출되는가");
 {
   const html = await (await fetch(`${BASE}/kiosk/gate-d5`)).text();
-  check("D동 옥상 키오스크에 방금 승인한 작업이 뜸", html.includes("컨베이어 벨트 점검"));
+  check("옥상 키오스크에 방금 승인한 작업이 뜸", html.includes("컨베이어 벨트 점검"));
   check("전달사항 플래그가 타일에 표시됨", html.includes("전달사항 있음"));
   const detail = await (await fetch(`${BASE}/kiosk/gate-d5/${newId}`)).text();
   check("작업 카드에 전달사항 본문이 뜸", detail.includes("옥상 난간"));

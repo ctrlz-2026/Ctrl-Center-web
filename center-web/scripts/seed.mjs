@@ -56,7 +56,7 @@ async function seedCollection(name, docs, idKey) {
 }
 
 /* 시연용 문서(scripts/seed-demo.mjs)는 정리 대상에서 뺍니다. 여기서 지우면
-   seed 를 돌릴 때마다 A동 1층 라인2 시연 데이터가 날아가 매번 다시 심어야
+   seed 를 돌릴 때마다 1층 시연 데이터가 날아가 매번 다시 심어야
    합니다. 지우는 건 seed-demo.mjs --clear 로 합니다. */
 const isDemoDoc = (id) => id.startsWith("demo-") || id.startsWith("req-demo-");
 /* (시나리오 문서도 같은 접두어를 씁니다 — seed 를 돌려도 오늘 시나리오는 남습니다.) */

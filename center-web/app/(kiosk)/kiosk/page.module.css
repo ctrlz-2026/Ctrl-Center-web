@@ -151,8 +151,10 @@
   height: 68px;
   border-radius: var(--radius-14);
   background: var(--primary-normal);
-  font-size: 32px;
+  /* "옥상" · "지하" 두 글자가 칸 안에 들어가는 크기. */
+  font-size: 24px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .cardBody {
@@ -715,7 +717,7 @@
   .code {
     width: 56px;
     height: 56px;
-    font-size: 26px;
+    font-size: 20px;
   }
 
   .cardTitle {

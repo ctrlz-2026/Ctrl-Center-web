@@ -29,7 +29,7 @@ let kept = 0;
 
 for (const doc of snap.docs) {
   // 시연용 요청(scripts/seed-demo.mjs)은 건드리지 않습니다. 여기서 지워버리면
-  // 리셋할 때마다 A동 1층 라인2 의 「작업 대기」가 사라져 다시 심어야 합니다.
+  // 리셋할 때마다 1층의 「작업 대기」가 사라져 다시 심어야 합니다.
   if (doc.id.startsWith("req-demo-")) {
     kept += 1;
   } else if (doc.id.startsWith("req-seed-")) {

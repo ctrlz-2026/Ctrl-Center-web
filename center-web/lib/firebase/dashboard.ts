@@ -14,7 +14,7 @@ import type { Anomaly, CrewMember, SiteBoardTile, SiteStatus } from "@/lib/types
  *   - 제어 버튼이 사라졌습니다. 현장 진행(문 열기·작업 종료)은 키오스크가 합니다.
  *   - 차단은 **표의 행이 아니라 "확인 필요"** 입니다. 차단된 사람은 작업을 한 게
  *     아니라 문 앞에서 막힌 것이라, 작업 목록에 섞이면 표가 부풀기만 합니다.
- *   - 작업장 7곳을 고정 자리에 두는 보드를 추가했습니다. */
+ *   - 작업장을 고정 자리에 두는 보드를 추가했습니다 (지금은 층 5곳). */
 
 export interface DashboardData {
   /** hint 는 KPI 라벨만 보고 뜻을 짐작하기 어려운 값이 헷갈린다는 피드백을 받아
@@ -428,7 +428,6 @@ export async function loadDashboard(): Promise<DashboardData> {
 
   // ── 작업장 보드 ─────────────────────────────────────────────────────────
   const board: SiteBoardTile[] = [...masters.sites.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
     .map(([siteId, siteName]) => {
       const working = liveRows.filter((r) => r.siteId === siteId);
       const waiting = waitingRows.filter((r) => r.siteId === siteId);

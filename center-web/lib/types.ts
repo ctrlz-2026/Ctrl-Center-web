@@ -419,10 +419,10 @@ export interface SiteStatus {
   expectedEndLabel?: string;
 }
 
-/** 작업장 보드의 칸 하나. 관제 화면 맨 위에서 **작업장 7곳을 한눈에** 봅니다.
+/** 작업장 보드의 칸 하나. 관제 화면 맨 위에서 **작업장 전체를 한눈에** 봅니다.
  *
  *  표만 있을 때는 "지금 어디가 비어 있고 어디가 바쁜지"를 알려면 행을 다 읽어야
- *  했습니다. 작업장은 고정된 7곳이라, 자리를 고정해 두면 위치만 보고도 압니다. */
+ *  했습니다. 작업장은 고정된 몇 곳(지금은 층 5곳)이라, 자리를 고정해 두면 위치만 보고도 압니다. */
 export type SiteBoardState = "alert" | "working" | "waiting" | "idle";
 
 export const SITE_BOARD_LABEL: Record<SiteBoardState, string> = {

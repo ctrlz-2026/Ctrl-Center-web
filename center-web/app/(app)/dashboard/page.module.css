@@ -79,10 +79,11 @@
 }
 
 /* ── 작업장 보드 ─────────────────────────────────────────────── */
-/* 7곳이 고정 자리입니다. 넓으면 4칸, 좁아지면 저절로 줄어듭니다. */
+/* 층 5곳이 고정 자리입니다. 넓으면 한 줄에 다 들어가고, 좁아지면 저절로 줄어듭니다.
+   (최소 폭을 230 으로 두면 4칸 + 1칸이 되어 한 층만 아랫줄에 떨어집니다.) */
 .board {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
 }
 

@@ -44,7 +44,7 @@ export function closedSessions() {
       members: [TEAM.jeong],
       passedFirstTry: true, verification: "전 항목 1차 통과" },
 
-    { id: "ses-5", siteId: "site-f0", gateId: "gate-f0", workCode: "F",
+    { id: "ses-5", siteId: "site-c0", gateId: "gate-c0", workCode: "F",
       startedAt: iso(day * 3 + 120), durationMinutes: 51,
       members: ["2013-0055", "2014-0132"],
       passedFirstTry: true, verification: "전 항목 1차 통과" },
@@ -54,7 +54,7 @@ export function closedSessions() {
       members: [TEAM.kim, TEAM.park],
       passedFirstTry: false, verification: "안전모 1회 미착용 → 재검증 통과" },
 
-    { id: "ses-7", siteId: "site-e1", gateId: "gate-e1", workCode: "G",
+    { id: "ses-7", siteId: "site-a1", gateId: "gate-a1", workCode: "G",
       startedAt: iso(day * 4 + 90), durationMinutes: 38,
       members: ["2014-0132", "2021-0619"],
       passedFirstTry: true, verification: "전 항목 1차 통과" },
