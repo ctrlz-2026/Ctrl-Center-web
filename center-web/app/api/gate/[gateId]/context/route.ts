@@ -52,6 +52,7 @@ export async function GET(
   const session: GateContext["session"] = s
     ? {
         state: s.state,
+        last_verification: s.lastVerification ?? undefined,
         headcount: s.headcount ?? { required: 0, tagged: 0, verified: 0, entered: 0 },
         pending: ((s.taggedEmpNos ?? []) as unknown[])
           .map(String)

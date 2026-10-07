@@ -149,6 +149,19 @@ export async function POST(request: Request) {
       const code = (err as { code?: number }).code;
       if (code === 6) {
         duplicated += 1;
+        // The receipt may have been created before a failed session update.
+        // Retry unfinished receipts; the transactional judge deduplicates them.
+        const receipt = await db.collection("gateEvents").doc(event.idempotency_key).get();
+        const stored = receipt.data();
+        if (stored && (stored.gateId !== body.gate_id || stored.approvalRequestId !== body.approval_request_id)) {
+          return NextResponse.json({ error: "다른 작업에서 사용된 이벤트 키입니다." }, { status: 409 });
+        }
+        if (stored && !stored.sessionId) acceptedEvents.push({
+          idempotency_key: event.idempotency_key,
+          kind: stored.kind,
+          payload: stored.payload,
+          occurred_at: stored.occurredAt,
+        } as GateEvent);
       } else {
         return NextResponse.json(
           { error: "이벤트를 기록하지 못했어요." },

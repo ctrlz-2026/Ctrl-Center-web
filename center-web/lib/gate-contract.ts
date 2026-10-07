@@ -130,6 +130,7 @@ export interface GateContext {
     state: GateStateResponse["state"];
     headcount: { required: number; tagged: number; verified: number; entered: number };
     pending: { emp_no: string; stage: "face" | "ppe" }[];
+      last_verification?: GateStateResponse["last_verification"];
   } | null;
 }
 

@@ -3,6 +3,7 @@ import "server-only";
 import { adminDb } from "./admin";
 import { loadMasters } from "./queries";
 import { qualificationStatus } from "./user";
+import { entryAllowed } from "../entry-policy";
 import type { GateEvent, GateEventsRequest, GateStateResponse } from "@/lib/gate-contract";
 
 /* 문 앞 판정.
@@ -37,8 +38,11 @@ export async function applyEvents(
   if (!work) throw new Error("work code missing");
 
   const ref = db.collection("gateSessions").doc(`${body.gate_id}__${body.approval_request_id}`);
-  const snap = await ref.get();
+  return db.runTransaction(async (transaction) => {
+  const contextRef = db.collection("kioskContexts").doc(body.gate_id);
+  const [snap, contextSnap] = await Promise.all([transaction.get(ref), transaction.get(contextRef)]);
   const old = snap.exists ? snap.data()! : {};
+  const processed = new Set(strings(old.processedEventKeys));
   const tagged = new Set(strings(old.taggedEmpNos));
   const face = new Set(strings(old.facePassedEmpNos));
   const verified = new Set(strings(old.verifiedEmpNos));
@@ -80,6 +84,8 @@ export async function applyEvents(
   };
 
   for (const event of events) {
+    if (processed.has(event.idempotency_key)) continue;
+    processed.add(event.idempotency_key);
     const p = event.payload as unknown as Record<string, unknown>;
     if (event.kind === "card_tag") {
       const uid = String(p.card_uid ?? "");
@@ -97,6 +103,17 @@ export async function applyEvents(
         return !expires || qualificationStatus(expires).status === "expired";
       });
       if (missing) { block(empNo, "qualification", `${masters.qualNames.get(missing) ?? missing} 자격이 없거나 만료됐습니다.`); continue; }
+      if (verified.has(empNo)) {
+        lastVerification = { emp_no: empNo, passed: true, failed_items: [], attempt: Number(old.lastVerification?.attempt ?? 1) };
+        message = entered.has(empNo)
+          ? "이미 입장이 기록된 작업자입니다. 퇴장은 실제 통과 확인 신호로 처리합니다."
+          : "이미 얼굴·보호구 확인을 마쳤습니다. 다른 작업자의 확인 또는 입장 안내를 기다려 주세요.";
+        continue;
+      }
+      if ([...tagged].some((other) => other !== empNo && !verified.has(other))) {
+        message = "앞 작업자의 얼굴·보호구 확인이 끝난 뒤 사원증을 태그해 주세요.";
+        continue;
+      }
       tagged.add(empNo); members.add(empNo); state = "face"; message = "얼굴을 확인하고 있습니다.";
       signal = "card_ok";
       continue;
@@ -104,9 +121,12 @@ export async function applyEvents(
 
     const empNo = typeof p.emp_no === "string" ? p.emp_no : "";
     if (!empNo || !tagged.has(empNo)) continue;
+    // Late observations must not undo a completed verification or reopen work.
+    if ((event.kind === "face_match" || event.kind === "ppe_check") &&
+        (verified.has(empNo) || state === "working")) continue;
     if (event.kind === "face_match") {
       if (p.matched === true && p.live !== false) { face.add(empNo); state = "verifying"; message = "얼굴 확인 완료 · 보호구를 확인하고 있습니다."; signal = "face_ok"; }
-      else { state = "face"; message = "얼굴 확인에 실패했습니다. 다시 시도해 주세요."; lastVerification = { emp_no: empNo, passed: false, failed_items: [], attempt: 0, block_reason: "face" }; signal = "face_fail"; }
+      else { face.delete(empNo); state = "face"; message = "얼굴 확인에 실패했습니다. 다시 시도해 주세요."; lastVerification = { emp_no: empNo, passed: false, failed_items: [], attempt: 0, block_reason: "face" }; signal = "face_fail"; }
     } else if (event.kind === "ppe_check") {
       const items = Array.isArray(p.items) ? p.items : [];
       const worn = new Set(items.filter((x) => typeof x === "object" && x !== null && (x as { worn?: boolean }).worn === true).map((x) => String((x as { code?: string }).code)));
@@ -126,7 +146,7 @@ export async function applyEvents(
         signal = unlock ? "unlock" : "ppe_ok";
         if (unlock) shouldClearContext = true;
       }
-    } else if (event.kind === "entry" && verified.has(empNo)) {
+    } else if (event.kind === "entry" && state !== "blocked" && entryAllowed(verified.has(empNo), verified.size, Number(work.requiredHeadcount ?? 1))) {
       /* 작업 시작 기준은 **실제로 들어간 사람 수**입니다 (「출입 및 인원관리
        * 로직」 §7). 검증을 통과한 수(verified)로 재면, 2명 작업에서 둘 다
        * 통과하고 한 명만 들어가도 "작업 중"이 됩니다 — 혼자 들어간 사람이
@@ -144,6 +164,8 @@ export async function applyEvents(
       // 문이 열려 첫 사람이 들어간 때가 작업 시작입니다. 사원증을 처음 댄
       // 시각으로 잡으면 검증에 걸린 시간까지 작업 시간에 섞입니다.
       if (!workStartedAt) workStartedAt = event.occurred_at;
+    } else if (event.kind === "entry") {
+      message = "필요한 인원의 검증이 아직 끝나지 않아 입장할 수 없습니다.";
     } else if (event.kind === "exit") {
       entered.delete(empNo); lastExit = { emp_no: empNo }; message = "퇴장 처리되었습니다.";
       signal = "exit";
@@ -158,7 +180,8 @@ export async function applyEvents(
   unlock = state !== "blocked" && verified.size >= required && entered.size < required;
   const headcount = { required, tagged: tagged.size, verified: verified.size, entered: entered.size };
   const now = new Date().toISOString();
-  await ref.set({
+  transaction.set(ref, {
+    processedEventKeys: [...processed].slice(-1024),
     gateId: body.gate_id, siteId: approval.siteId, workCode: workCodeId,
     approvalRequestId: body.approval_request_id, state, members: [...members],
     /* startedAt 은 관제 화면이 "경과"로 읽는 값이라 **작업이 시작된 때**여야
@@ -182,9 +205,8 @@ export async function applyEvents(
     ...(approval.demo === true ? { demo: true } : {}),
   }, { merge: true });
   if (shouldClearContext) {
-    const ctx = db.collection("kioskContexts").doc(body.gate_id);
-    const ctxSnap = await ctx.get();
-    if (ctxSnap.data()?.approvalRequestId === body.approval_request_id) await ctx.delete();
+    if (contextSnap.data()?.approvalRequestId === body.approval_request_id) transaction.delete(contextRef);
   }
   return { session_id: ref.id, state, headcount, last_verification: lastVerification, last_exit: lastExit, unlock, message };
+  });
 }
